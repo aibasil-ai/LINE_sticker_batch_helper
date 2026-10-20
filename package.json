@@ -4,11 +4,13 @@
   "private": true,
   "description": "LINE Creators Market batch helper based on the supplied recording",
   "scripts": {
+    "scan": "node run.cjs --scan",
     "check": "node run.cjs --check",
     "login": "node run.cjs --login",
     "start": "node run.cjs",
     "resume": "node run.cjs --resume",
-    "test": "node test/core.test.cjs && node test/cli.test.cjs",
+    "test": "node test/core.test.cjs && node test/cli.test.cjs && node test/scan.test.cjs",
+    "test:scan": "node test/scan.test.cjs",
     "test:announcements": "node test/announcements.test.cjs"
   },
   "devDependencies": { "@playwright/test": "latest" }

@@ -17,7 +17,7 @@ async function runCLITests() {
   const configFile = path.join(folder, 'items.json');
   const stateFile = path.join(folder, 'results', 'progress.json');
   const lockFile = path.join(folder, 'results', 'run.lock');
-  const config = core.readJSON(path.join(__dirname, '..', 'items.json'));
+  const config = core.readJSON(path.join(__dirname, 'fixtures', 'items.json'));
   config.items[0].zip = 'arbitrary-name.zip';
   const archive = path.join(folder, 'arbitrary-name.zip');
   const entries = [['main.png', png(240, 240)], ['tab.png', png(96, 74)], ...Array.from({ length: 32 }, (_, i) => [String(i + 1).padStart(2, '0') + '.png', png(370, 320)])];

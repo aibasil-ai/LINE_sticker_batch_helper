@@ -15,9 +15,10 @@
   },
   "items": [
     {
-      "id": "ibusuki-002",
+      "id": "002",
       "enabled": true,
       "zip": "sticker/002/ibusuki-upload.zip",
+      "stickerCount": 32,
       "languages": {
         "zh-Hant": {
           "title": "指宿海岸小列車與小海龜",
@@ -34,9 +35,10 @@
       }
     },
     {
-      "id": "starrail-003",
+      "id": "003",
       "enabled": true,
       "zip": "sticker/003/starrail-upload.zip",
+      "stickerCount": 32,
       "languages": {
         "zh-Hant": {
           "title": "星旅小火車與柚子嚮導",

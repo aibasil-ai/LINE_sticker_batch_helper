@@ -7,9 +7,17 @@ const { readJSON, writeJSON, textUnits, parseArgs, productFromURL, loadConfig, i
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
-    console.log('node run.cjs [--check|--login|--resume] [--auto] [--items items.json] [--id ID] [--zip PATH] [--attach-url URL]'); return;
+    console.log('node run.cjs [--check|--login|--resume] [--auto] [--items items.json] [--id ID] [--zip PATH] [--attach-url URL]\nnode run.cjs --scan [--scan-dir sticker] [--items items.json]'); return;
   }
   const configFile = path.resolve(opts.items || path.join(__dirname, 'items.json'));
+  if (opts.scan) {
+    const { generateItems } = require('./scan.cjs');
+    const result = generateItems(configFile, opts['scan-dir']);
+    console.log('掃描資料夾：' + result.scanDir);
+    for (const item of result.scanned) console.log(`[${item.id}] ${item.existing ? '更新' : '新增'}：${item.zip}（${item.stickerCount} 張）`);
+    console.log(`已產生 ${result.configFile}：掃描 ${result.scanned.length} 組，清單共 ${result.total} 組。尚未連線 LINE。`);
+    return;
+  }
   const config = loadConfig(configFile, opts);
   const resultsDir = path.join(config.configDir, 'results');
   fs.mkdirSync(resultsDir, { recursive: true });

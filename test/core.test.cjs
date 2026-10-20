@@ -40,7 +40,7 @@ function runTests() {
   const outcomes = [];
   const check = (name, fn) => { fn(); outcomes.push(name); };
   try {
-    const sample = core.readJSON(path.join(__dirname, '..', 'items.json'));
+    const sample = core.readJSON(path.join(__dirname, 'fixtures', 'items.json'));
     const configFile = path.join(temp, 'items.json');
     const entries = [['main.png', png(240, 240)], ['tab.png', png(96, 74)], ...Array.from({ length: 32 }, (_, i) => [String(i + 1).padStart(2, '0') + '.png', png(370, 320)])];
     const archive = path.join(temp, 'custom-name.zip'); fs.writeFileSync(archive, zip(entries));

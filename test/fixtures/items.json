@@ -1,0 +1,37 @@
+{
+  "baseDir": ".",
+  "authFile": "line-auth.json",
+  "defaults": {
+    "copyright": "© 2026 Test Creator",
+    "stickerCount": 32,
+    "useAI": true,
+    "autoStartSale": true,
+    "priceTier": "5"
+  },
+  "verification": {
+    "mode": "manual",
+    "readySelector": "",
+    "timeoutMs": 180000
+  },
+  "items": [
+    {
+      "id": "ibusuki-002",
+      "enabled": true,
+      "zip": "sticker/002/ibusuki-upload.zip",
+      "languages": {
+        "zh-Hant": {
+          "title": "指宿海岸小列車與小海龜",
+          "description": "黑白小列車和小海龜，陪你打招呼、道謝、加油與放鬆。32張無字貼圖，分享海岸旅行般的溫暖日常。"
+        },
+        "en": {
+          "title": "Coastal Train and Tiny Turtle",
+          "description": "A little black-and-white train and a tiny turtle share greetings, thanks, cheers and cozy breaks in 32 wordless stickers inspired by Ibusuki coastal trips."
+        },
+        "ja": {
+          "title": "海辺の小さな列車とこがめ",
+          "description": "指宿の海辺の旅をイメージした、小さな白黒列車とこがめ。あいさつ、お礼、応援、ひと休みに使える文字なしスタンプ32個です。"
+        }
+      }
+    }
+  ]
+}

@@ -20,8 +20,8 @@ function textUnits(value) {
 function sha256(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
 function parseArgs(args) {
   const opts = {};
-  const switches = new Set(['--check', '--login', '--resume', '--help', '--auto']);
-  const values = new Set(['--id', '--zip', '--items', '--attach-url']);
+  const switches = new Set(['--check', '--login', '--resume', '--help', '--auto', '--scan']);
+  const values = new Set(['--id', '--zip', '--items', '--attach-url', '--scan-dir']);
   for (let i = 0; i < args.length; i++) {
     const key = args[i];
     if (switches.has(key)) opts[key.slice(2)] = true;
@@ -32,6 +32,10 @@ function parseArgs(args) {
   }
   if (opts.zip && !opts.id) throw new Error('--zip 必須搭配 --id，避免覆蓋到多組');
   if (opts['attach-url'] && !opts.id) throw new Error('--attach-url 必須搭配 --id');
+  if (opts['scan-dir'] && !opts.scan) throw new Error('--scan-dir 必須搭配 --scan');
+  if (opts.scan && ['check', 'login', 'resume', 'id', 'zip', 'attach-url'].some(key => opts[key])) {
+    throw new Error('--scan 只產生清單，請與預檢、登入、執行及單組操作分開使用');
+  }
   return opts;
 }
 function productFromURL(value) {
@@ -41,7 +45,9 @@ function productFromURL(value) {
   return match ? { id: match[1], url: url.href } : null;
 }
 function loadConfig(file, opts = {}) {
-  const config = readJSON(file);
+  return validateConfig(readJSON(file), file, opts);
+}
+function validateConfig(config, file, opts = {}) {
   if (!Array.isArray(config.items) || !config.items.length) throw new Error('items 必須是非空陣列');
   const configDir = path.dirname(path.resolve(file));
   const baseDir = path.resolve(configDir, config.baseDir || '.');
@@ -93,7 +99,8 @@ function inspectZip(file, amount) {
   const count = data.readUInt16LE(eocd + 10);
   let offset = data.readUInt32LE(eocd + 16);
   if (count === 0xffff || offset === 0xffffffff || data.readUInt16LE(eocd + 4) || data.readUInt16LE(eocd + 6)) throw new Error('不支援 ZIP64 或分片 ZIP');
-  const expected = new Set(['main.png', 'tab.png', ...Array.from({ length: amount }, (_, i) => String(i + 1).padStart(2, '0') + '.png')]);
+  const expectedNames = count => new Set(['main.png', 'tab.png', ...Array.from({ length: count }, (_, i) => String(i + 1).padStart(2, '0') + '.png')]);
+  let expected = expectedNames(amount ?? 40);
   const found = new Set();
   const images = {};
   const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -121,11 +128,17 @@ function inspectZip(file, amount) {
     if (name === 'main.png' ? w !== 240 || h !== 240 : name === 'tab.png' ? w !== 96 || h !== 74 : w > 370 || h > 320) throw new Error(name + ' 尺寸不符');
     images[name.slice(0, -4)] = { sha1: crypto.createHash('sha1').update(png).digest('hex'), width: w, height: h };
   }
-  if (found.size !== expected.size) throw new Error('ZIP 缺少：' + [...expected].filter(n => !found.has(n)).join(', '));
-  return { hash: sha256(data), imageCount: found.size, bytes: stat.size, images };
+  if (amount === undefined) {
+    amount = found.size - 2;
+    if (![8, 16, 24, 32, 40].includes(amount)) throw new Error('ZIP 貼圖張數須為 8、16、24、32 或 40（不含主圖與標籤）');
+    expected = expectedNames(amount);
+  }
+  const missing = [...expected].filter(n => !found.has(n));
+  if (missing.length) throw new Error('ZIP 缺少：' + missing.join(', '));
+  return { hash: sha256(data), imageCount: found.size, stickerCount: amount, bytes: stat.size, images };
 }
 function fingerprint(item, zipHash) {
   return sha256(JSON.stringify({ zipHash, languages: item.languages, copyright: item.copyright,
     stickerCount: item.stickerCount, useAI: item.useAI, autoStartSale: item.autoStartSale, priceTier: item.priceTier }));
 }
-module.exports = { readJSON, writeJSON, textUnits, parseArgs, productFromURL, loadConfig, inspectZip, fingerprint };
+module.exports = { readJSON, writeJSON, textUnits, parseArgs, productFromURL, loadConfig, validateConfig, inspectZip, fingerprint };

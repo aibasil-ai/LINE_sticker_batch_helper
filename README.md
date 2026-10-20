@@ -1,6 +1,6 @@
 # LINE 貼圖批次草稿工具
 
-使用 Node.js 與 Playwright，依照 `items.json` 逐組建立 LINE Creators Market 貼圖草稿：填入繁體中文、英文與日文文案、上傳 ZIP、核對圖片，以及設定並儲存價格。支援 Windows PowerShell 與 macOS 終端機。
+使用 Node.js 與 Playwright，掃描素材資料夾產生 `items.json` 清單，再逐組建立 LINE Creators Market 貼圖草稿：填入繁體中文、英文與日文文案、上傳 ZIP、核對圖片，以及設定並儲存價格。支援 Windows PowerShell 與 macOS 終端機。
 
 執行過程會自動關閉可辨識的網站公告，並在公告提供該選項時勾選「以後不再顯示此畫面」。
 
@@ -10,9 +10,10 @@
 
 ### 已安裝並完成登入
 
-在專案資料夾開啟終端機，確認 `items.json` 的文案與 ZIP 路徑後，先檢查資料：
+將各組 ZIP 與三語文案 TXT 放在 `sticker/` 的個別子資料夾。在專案資料夾開啟終端機，先產生清單，再檢查資料：
 
 ```sh
+npm run scan
 node run.cjs --check --auto
 ```
 
@@ -25,7 +26,7 @@ node run.cjs --resume --auto
 - 依清單順序處理所有 `enabled` 不是 `false` 的項目；組數由清單決定。
 - `--resume` 可用於首次執行，已完成的草稿會跳過。
 - `--auto` 啟用圖片自動核對，不需要逐組在終端機輸入 `OK`，也會覆寫清單中的人工核對設定。
-- 工具不會自動掃描素材資料夾或讀取文案 TXT，請先把每組資料填入清單。
+- 素材新增或文案修改後，先重新執行 `npm run scan`，將內容更新到清單；也可手動編輯清單。
 
 ### 全新安裝
 
@@ -39,7 +40,7 @@ npm exec -- playwright install chromium
 node run.cjs --login
 ```
 
-完成 LINE 登入並進入創作者管理後台後，回終端機按 Enter 儲存登入狀態。接著編輯 `items.json`，依照上方指令預檢並執行。
+完成 LINE 登入並進入創作者管理後台後，回終端機按 Enter 儲存登入狀態。接著確認 `items.json` 的共用設定，放入素材，依照上方指令產生清單、預檢並執行。
 
 登入狀態預設儲存在 `line-auth.json`，內含帳號存取資料，請保留在自己的電腦。登入失效時，重新執行 `node run.cjs --login`，再續跑。
 
@@ -48,6 +49,8 @@ node run.cjs --login
 | 需求 | 指令 |
 | --- | --- |
 | 查看參數 | `node run.cjs --help` |
+| 掃描預設資料夾並產生清單 | `npm run scan` 或 `node run.cjs --scan` |
+| 掃描指定資料夾 | `npm run scan -- --scan-dir "其他素材資料夾"` |
 | 檢查全部啟用組別，不連線 LINE | `node run.cjs --check --auto` |
 | 整批執行或續跑 | `node run.cjs --resume --auto` |
 | 只檢查指定組別 | `node run.cjs --check --auto --id ibusuki-002` |
@@ -67,13 +70,91 @@ node run.cjs --resume --auto --id ibusuki-002 --zip "/完整路徑/任意檔名.
 
 `--zip` 必須搭配 `--id`，只影響這次執行。每次續跑都要帶相同覆寫，或將正確路徑寫回清單。
 
+## 從素材資料夾自動產生 items
+
+預設掃描 `baseDir` 底下的 `sticker/`，每個直屬子資料夾代表一組貼圖：
+
+```text
+sticker/
+├── 002/
+│   ├── ibusuki-upload.zip
+│   └── listing-copy.txt
+├── 003/
+│   ├── starrail-upload.zip
+│   └── starrail-listing-copy.txt
+└── 004/
+    ├── 任意檔名.zip
+    └── 任意文案檔名.txt
+```
+
+執行：
+
+```sh
+npm run scan
+```
+
+程式會讀取 ZIP 與文案，將各組的 `zip`、`stickerCount` 及 `languages` 寫入 `items.json`。新增項目的 ID 使用資料夾名稱，例如 `004`；`enabled` 預設為 `true`。清單中的 `defaults`、登入與圖片核對等共用設定會保留。
+
+### 掃描規則與既有資料
+
+- 每個非隱藏直屬子資料夾內，必須恰有一個 `.zip` 與一個 UTF-8 `.txt`；檔名可自訂，副檔名不分大小寫。
+- 只掃描一層子資料夾，忽略掃描根目錄的檔案、隱藏資料夾及 `__MACOSX`。
+- 由 ZIP 的實際圖號推算 8、16、24、32 或 40 張貼圖，同時檢查檔名、結構與尺寸；張數會寫入各組，優先於 `defaults.stickerCount`。
+- 依 ZIP 所在資料夾對應既有項目，保留原有 ID、停用狀態與價格等個別設定。既有的 `ibusuki-002`、`starrail-003` 會沿用原 ID，ZIP 改名也能對應。
+- 既有項目維持原順序；新項目依資料夾名稱的數字順序加入。未出現在本次掃描範圍的既有項目會保留，可用 `enabled: false` 停用。
+- 產生清單時，文案以 TXT 內容為準。保留既有 ID 與素材資料夾路徑，可接續原商品；後續預檢仍會核對文案、ZIP 與設定是否符合進度紀錄。
+- 任一資料夾缺檔、多檔、文案無法解析、ZIP 不合規格或 ID 衝突，整次產生會停止，原清單保留。執行中的工具若持有 `run.lock`，也會先停止掃描。
+
+`--scan` 完成清單產生後即結束，不需登入或開啟瀏覽器。請再執行預檢與續跑指令；`--scan` 需與 `--check`、`--login`、`--resume`、`--id`、`--zip`、`--attach-url` 分開使用。
+
+### 文案格式
+
+支援目前兩份文案所使用的「名稱 / Title、說明 / Description」與「貼圖名稱、商品說明」格式。例如：
+
+```text
+【繁體中文】
+貼圖名稱：海岸小列車與小海龜
+商品說明：小列車與小海龜，陪你打招呼、道謝與加油。
+
+【English】
+貼圖名稱：Coastal Train and Tiny Turtle
+商品說明：A little train and a tiny turtle share greetings, thanks and encouragement.
+
+【日本語】
+貼圖名稱：海辺の列車とこがめ
+商品說明：小さな列車とこがめが、あいさつや感謝、応援の気持ちを届けます。
+```
+
+語言標題可使用 `繁體中文`／`zh-Hant`、`English`／`en`、`日本語`／`ja`，可加上 `【】` 或 `[]`。欄位也支援 `名稱`、`標題`、`Title` 與 `說明`、`Description`；冒號可用 `:` 或 `：`。
+
+三種語言都必須有標題與說明，說明支援多行。`名稱計數：...`、`說明計數：...` 等計數行會忽略，實際長度由程式重新計算。檔案可包含 UTF-8 BOM，支援 Windows 與 macOS 換行。
+
+### 指定其他資料夾或清單
+
+單次改用其他素材根目錄：
+
+```sh
+npm run scan -- --scan-dir "/完整路徑/素材資料夾"
+```
+
+也可在 `items.json` 最外層加入 `"scanDir": "其他素材資料夾"`，作為之後的預設值。`scanDir` 與 `--scan-dir` 的相對路徑都以 `baseDir` 為基準；命令列路徑優先，但不會改寫 `scanDir` 設定。
+
+使用另一份清單時，產生、預檢與續跑均指定同一個 `--items`：
+
+```sh
+node run.cjs --scan --items "另一份清單.json" --scan-dir "sticker"
+node run.cjs --check --auto --items "另一份清單.json"
+node run.cjs --resume --auto --items "另一份清單.json"
+```
+
 ## 設定清單
 
-預設讀取 `run.cjs` 同一資料夾的 `items.json`。以下是單組設定範例；請替換 Copyright、文案與素材路徑：
+預設讀取 `run.cjs` 同一資料夾的 `items.json`。初次產生清單前，`items` 可設為空陣列或省略，並保留共用設定。以下是產生後的單組設定範例；請替換 Copyright、文案與素材路徑：
 
 ```json
 {
   "baseDir": ".",
+  "scanDir": "sticker",
   "authFile": "line-auth.json",
   "continueOnError": true,
   "defaults": {
@@ -92,6 +173,7 @@ node run.cjs --resume --auto --id ibusuki-002 --zip "/完整路徑/任意檔名.
       "id": "ibusuki-002",
       "enabled": true,
       "zip": "sticker/002/ibusuki-upload.zip",
+      "stickerCount": 32,
       "languages": {
         "zh-Hant": {
           "title": "海岸小列車與小海龜",
@@ -116,6 +198,7 @@ node run.cjs --resume --auto --id ibusuki-002 --zip "/完整路徑/任意檔名.
 | 欄位 | 說明 |
 | --- | --- |
 | `baseDir` | ZIP 路徑基準，預設為清單所在資料夾（`.`）。 |
+| `scanDir` | 掃描素材的根目錄，相對於 `baseDir`，預設為 `sticker`；可由 `--scan-dir` 單次覆寫。 |
 | `authFile` | 登入檔路徑，相對於清單所在資料夾，預設為 `line-auth.json`。 |
 | `continueOnError` | 預設 `true`：單組網站操作失敗後繼續下一組；設為 `false` 則停止。 |
 | `defaults` | 各組共用設定，同名欄位可在個別項目覆寫。 |
@@ -132,12 +215,13 @@ node run.cjs --resume --auto --id ibusuki-002 --zip "/完整路徑/任意檔名.
 
 標題預估長度上限為 40，說明為 160；ASCII 字元計為 1，其他字元計為 2。標題不可換行，標題與說明不可為空，實際長度仍以網站計數為準。未設定的分類、創作者與地區等欄位沿用網站預設。
 
-增加組別時，在 `items` 陣列新增物件即可。清單需使用有效 JSON 與 UTF-8 編碼，不能加註解或尾端逗號。請保留既有組別的 ID，不要用已完成商品的 ID 建立不同內容。
+增加組別時，在掃描目錄新增素材子資料夾後執行 `npm run scan`，或手動在 `items` 陣列新增物件。清單需使用有效 JSON 與 UTF-8 編碼，不能加註解或尾端逗號。請保留既有組別的 ID，不要用已完成商品的 ID 建立不同內容。
 
 ### 路徑規則
 
 - `--items` 的相對路徑以目前終端機目錄為基準。
 - `baseDir` 的相對路徑以清單所在資料夾為基準。
+- `scanDir` 與 `--scan-dir` 的相對路徑以解析後的 `baseDir` 為基準。
 - 清單中的 `zip` 與 `--zip` 的相對路徑，都以解析後的 `baseDir` 為基準。
 - 登入檔與 `results/` 位於清單對應的位置，不受 `baseDir` 影響；`authFile` 也可指定完整路徑。
 
@@ -241,7 +325,7 @@ node run.cjs --resume --auto
 ## 更新舊版
 
 1. 在舊工具終端機按 Ctrl+C，結束執行中的程序。
-2. 將 `core.cjs`、`run.cjs`、`line-site.cjs`、`image-verification.cjs` 一起更新到原專案資料夾。
+2. 將 `core.cjs`、`run.cjs`、`line-site.cjs`、`image-verification.cjs`、`scan.cjs` 一起更新到原專案資料夾。使用 `npm run scan` 時，也需同步更新 `package.json` 的指令設定。
 3. 保留自己的 `items.json`、`line-auth.json`、`results/` 與素材 ZIP；不要用範例清單覆蓋現有清單。
 4. 在直接包含新版 `run.cjs` 的資料夾執行預檢，再以 `--resume --auto` 續跑。
 
@@ -251,7 +335,7 @@ node run.cjs --resume --auto
 
 ### 為什麼仍要求逐組輸入 OK？
 
-確認執行指令有加 `--auto`，或清單已設定 `verification.mode: "auto"`。目前附帶的清單仍使用人工模式；若出現「未知參數：--auto」，表示執行中的 `run.cjs` 仍是舊版，請依更新步驟替換四個程式檔。
+確認執行指令有加 `--auto`，或清單已設定 `verification.mode: "auto"`。目前附帶的清單仍使用人工模式；若出現「未知參數：--auto」，表示執行中的 `run.cjs` 仍是舊版，請依更新步驟替換程式檔。
 
 ### 找不到 image-verification.cjs 或 Chromium？
 
@@ -269,12 +353,14 @@ node run.cjs --resume --auto
 
 ```sh
 npm test
+npm run test:scan
 npm run test:announcements
 ```
 
-- `npm test`：本機核心與 CLI 測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度與執行鎖，不需 Chromium。
+- `npm test`：本機核心、CLI 與掃描測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生與執行鎖，不需 Chromium。
+- `npm run test:scan`：單獨執行掃描與文案解析測試，包含兩種文案格式、張數推算、保留既有 ID、錯誤時保留清單與自訂路徑。
 - `npm run test:announcements`：以 Chromium 執行本機 HTML fixtures，檢查多層公告、延遲公告與勾選後關閉等行為；需先安裝瀏覽器。
 
-**目前已知測試問題**：CLI 測試會載入整份 `items.json`，但只為第一組建立 ZIP fixture。目前清單有兩組啟用項目，因此 `npm test` 的 CLI 預檢案例會因暫存測試資料夾缺少第二組 ZIP 而失敗，需同步補齊測試資料。
+核心與 CLI 測試使用獨立的 `test/fixtures/items.json`，掃描測試使用暫存素材，不會依賴或改寫自己的清單與進度。
 
 上述測試不會登入或上傳到 LINE。`validation-report.json` 是先前的驗證紀錄，最新結果請以實際執行測試為準。
