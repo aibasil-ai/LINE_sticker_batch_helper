@@ -1,0 +1,15 @@
+{
+  "name": "line-sticker-batch",
+  "version": "1.0.1",
+  "private": true,
+  "description": "LINE Creators Market batch helper based on the supplied recording",
+  "scripts": {
+    "check": "node run.cjs --check",
+    "login": "node run.cjs --login",
+    "start": "node run.cjs",
+    "resume": "node run.cjs --resume",
+    "test": "node test/core.test.cjs && node test/cli.test.cjs",
+    "test:announcements": "node test/announcements.test.cjs"
+  },
+  "devDependencies": { "@playwright/test": "latest" }
+}

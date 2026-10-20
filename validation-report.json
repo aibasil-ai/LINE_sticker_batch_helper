@@ -1,0 +1,56 @@
+{
+  "scope": "Core/CLI offline tests and local Chromium HTML fixture tests only; actual LINE account workflow not executed.",
+  "syntaxChecked": [
+    "core.cjs",
+    "line-site.cjs",
+    "run.cjs",
+    "test/core.test.cjs",
+    "test/cli.test.cjs"
+  ],
+  "core": {
+    "passed": 15,
+    "tests": [
+      "三語計數與提供的文案一致",
+      "相對路徑相對清單而非終端機目錄",
+      "允許單組覆寫任意 ZIP 檔名與位置",
+      "拒絕未指定組別的 ZIP 覆寫",
+      "拒絕重複組別 ID",
+      "拒絕過長文案",
+      "拒絕無完成訊號的自動驗證模式",
+      "通過標準 32 張 + 主圖 + 標籤 ZIP",
+      "拒絕缺圖 ZIP",
+      "拒絕圖片放在巢狀資料夾",
+      "拒絕主圖尺寸錯誤",
+      "拒絕遭截斷 ZIP",
+      "檔名與路徑更動不改變續跑識別",
+      "文案異動會改變續跑識別",
+      "只接受 LINE 官方商品管理網址"
+    ]
+  },
+  "cli": {
+    "passed": 7,
+    "tests": [
+      "預檢不啟動瀏覽器或要求登入檔",
+      "續跑跳過已完成商品並釋放鎖",
+      "不帶續跑旗標時拒絕重複新增",
+      "建立結果不明時阻止再次建立",
+      "補綁既有商品只改進度、不啟動瀏覽器",
+      "拒絕同時執行且保留其他執行的鎖",
+      "整批預檢失敗時不開始任何網站操作"
+    ]
+  },
+  "version": "1.0.1",
+  "announcements": {
+    "passed": 8,
+    "tests": [
+      "沒有公告正常繼續",
+      "可捲動公告勾選後關閉",
+      "跳過隱藏公告",
+      "依可點擊狀態處理重疊公告",
+      "隱藏原生 checkbox 點可見 label",
+      "等待延遲下一公告",
+      "辨識同容器切換公告",
+      "等待換頁後延遲公告"
+    ]
+  }
+}

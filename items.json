@@ -1,0 +1,56 @@
+{
+  "baseDir": ".",
+  "authFile": "line-auth.json",
+  "defaults": {
+    "copyright": "© 2026 Aibasil. All rights reserved.",
+    "stickerCount": 32,
+    "useAI": true,
+    "autoStartSale": true,
+    "priceTier": "5"
+  },
+  "verification": {
+    "mode": "manual",
+    "readySelector": "",
+    "timeoutMs": 180000
+  },
+  "items": [
+    {
+      "id": "ibusuki-002",
+      "enabled": true,
+      "zip": "sticker/002/ibusuki-upload.zip",
+      "languages": {
+        "zh-Hant": {
+          "title": "指宿海岸小列車與小海龜",
+          "description": "黑白小列車和小海龜，陪你打招呼、道謝、加油與放鬆。32張無字貼圖，分享海岸旅行般的溫暖日常。"
+        },
+        "en": {
+          "title": "Coastal Train and Tiny Turtle",
+          "description": "A little black-and-white train and a tiny turtle share greetings, thanks, cheers and cozy breaks in 32 wordless stickers inspired by Ibusuki coastal trips."
+        },
+        "ja": {
+          "title": "海辺の小さな列車とこがめ",
+          "description": "指宿の海辺の旅をイメージした、小さな白黒列車とこがめ。あいさつ、お礼、応援、ひと休みに使える文字なしスタンプ32個です。"
+        }
+      }
+    },
+    {
+      "id": "starrail-003",
+      "enabled": true,
+      "zip": "sticker/003/starrail-upload.zip",
+      "languages": {
+        "zh-Hant": {
+          "title": "星旅小火車與柚子嚮導",
+          "description": "九州旅遊靈感的酒紅小火車，和柚子嚮導一起問候、道謝、撒嬌與加油。32張無字貼圖，陪你分享每一天的心情。"
+        },
+        "en": {
+          "title": "Starry Rail and Yuzu",
+          "description": "A burgundy train and its yuzu guide share greetings, thanks, hugs and encouragement in 32 wordless stickers inspired by travels around Kyushu."
+        },
+        "ja": {
+          "title": "星旅列車とゆずガイド",
+          "description": "九州の旅をイメージした赤い列車とゆずガイド。あいさつ、感謝、応援など、毎日の気持ちを伝える文字なしスタンプ32個。"
+        }
+      }
+    }
+  ]
+}
