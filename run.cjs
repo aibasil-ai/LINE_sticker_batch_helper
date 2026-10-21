@@ -11,8 +11,16 @@ async function main() {
       'node run.cjs [--check|--login|--resume] [--auto] [--items items.json] [--id ID] [--zip PATH] [--attach-url URL]',
       'node run.cjs --scan [--scan-dir sticker] [--items items.json]',
       'node run.cjs --clear-items [--items items.json]',
-      'node run.cjs --clear-results [--items items.json]'
+      'node run.cjs --clear-results [--items items.json]',
+      'node run.cjs --clear-sticker'
     ].join('\n')); return;
+  }
+  if (opts['clear-sticker']) {
+    const { backupAndClearStickers } = require('./sticker-cleanup.cjs');
+    const result = backupAndClearStickers(__dirname);
+    for (const group of result.groups) console.log(`[${group.name}] 備份 ${group.files.length} 個檔案：${group.backupDir}`);
+    console.log(`已備份並清除 ${result.groups.length} 組，共 ${result.fileCount} 個檔案；已保留來源資料夾。`);
+    return;
   }
   const configFile = path.resolve(opts.items || path.join(__dirname, 'items.json'));
   if (opts['clear-items']) {

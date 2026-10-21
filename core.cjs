@@ -60,7 +60,7 @@ function textUnits(value) {
 function sha256(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
 function parseArgs(args) {
   const opts = {};
-  const switches = new Set(['--check', '--login', '--resume', '--help', '--auto', '--scan', '--clear-items', '--clear-results']);
+  const switches = new Set(['--check', '--login', '--resume', '--help', '--auto', '--scan', '--clear-items', '--clear-results', '--clear-sticker']);
   const values = new Set(['--id', '--zip', '--items', '--attach-url', '--scan-dir']);
   for (let i = 0; i < args.length; i++) {
     const key = args[i];
@@ -69,6 +69,9 @@ function parseArgs(args) {
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(key + ' 缺少參數');
       opts[key.slice(2)] = args[++i];
     } else throw new Error('未知參數：' + key);
+  }
+  if (opts['clear-sticker'] && Object.keys(opts).some(key => !['clear-sticker', 'help'].includes(key))) {
+    throw new Error('--clear-sticker 只備份並清空專案的 sticker 子資料夾，請與其他操作參數分開使用');
   }
   if (opts['clear-items'] && Object.keys(opts).some(key => !['clear-items', 'items', 'help'].includes(key))) {
     throw new Error('--clear-items 只清空清單，請與其他操作參數分開使用（可搭配 --items）');

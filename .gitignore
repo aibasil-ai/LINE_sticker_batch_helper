@@ -3,5 +3,6 @@ node_modules/
 line-auth.json
 .pw-profile/
 results/
+sticker-backups/
 packs/
 *.zip

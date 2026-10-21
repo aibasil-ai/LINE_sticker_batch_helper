@@ -53,6 +53,7 @@ node run.cjs --login
 | 掃描指定資料夾 | `npm run scan -- --scan-dir "其他素材資料夾"` |
 | 清空清單中的所有組別 | `npm run clear-items` 或 `node run.cjs --clear-items` |
 | 清空本機進度與執行結果 | `npm run clear-results` 或 `node run.cjs --clear-results` |
+| 備份後清空素材子資料夾的檔案 | `npm run clear-sticker` 或 `node run.cjs --clear-sticker` |
 | 檢查全部啟用組別，不連線 LINE | `node run.cjs --check --auto` |
 | 整批執行或續跑 | `node run.cjs --resume --auto` |
 | 只檢查指定組別 | `node run.cjs --check --auto --id ibusuki-002` |
@@ -104,6 +105,38 @@ npm run clear-results -- --items "另一份清單.json"
 
 `results/` 的位置以清單所在目錄為準，不受 `baseDir` 影響。清除期間會持有執行鎖；若已有 `run.lock`，指令會停止並保留結果。`--clear-results` 除了 `--items` 與 `--help` 外，不能搭配其他操作參數，包含 `--clear-items`。
 
+### 備份後清空 sticker 素材
+
+執行以下指令，先備份每組素材，再清除來源檔案：
+
+```sh
+npm run clear-sticker
+# 或
+node run.cjs --clear-sticker
+```
+
+指令固定處理 `run.cjs` 所在專案的 `sticker/`：每個直屬子資料夾代表一組，包含隱藏資料夾；組內的所有檔案都會備份，包含文案 `.txt`、貼圖 `.zip`、隱藏檔與巢狀檔案。空資料夾會略過，`sticker/` 根目錄的檔案會保留。
+
+備份放在專案目錄下自動建立的 `sticker-backups/`，各組依「執行當天的本機日期（YYYYMMDD）＋TXT 文案中的繁體中文貼圖名稱」建立資料夾，並保留原檔名與相對路徑。例如：
+
+```text
+sticker-backups/
+├── 20261021-星旅小火車與柚子嚮導/
+│   ├── starrail-listing-copy.txt
+│   └── starrail-upload.zip
+└── 20261021-指宿海岸小列車與小海龜/
+    ├── listing-copy.txt
+    └── ibusuki-upload.zip
+```
+
+- 文案名稱沿用既有的繁體中文語言標題與名稱欄位格式，不要求英文或日文文案完整。同組有多份 TXT 時，會略過無法辨識名稱的筆記；可辨識的文案必須指向同一個繁中名稱。
+- 同日同名的資料夾會加上 `-2`、`-3` 等流水號，不會覆蓋舊備份。檔案系統禁用字元會替換成 `_`。
+- **全部組別備份完成並以 SHA256 核對內容一致，且確認來源未變更後，才開始刪除來源檔案。** 原本的素材資料夾結構會保留。
+- 無法判定名稱、遇到符號連結、備份失敗或內容核對失敗時，不會開始清除任何來源；失敗時產生的部分備份會保留。若在刪除階段發生錯誤，完整備份仍會保留，指令會回報錯誤與備份位置。
+- 執行期間會持有專案的 `results/run.lock`；若已有執行鎖，會停止。`sticker-backups/` 已加入 `.gitignore`。
+
+完成後會顯示每組的備份位置與檔案數。此指令不需清單或登入，`items.json`、登入狀態與進度檔會保留；它不使用 `baseDir`、`scanDir` 或 `--items`，除了 `--help` 外，需與其他操作參數分開使用。
+
 ### 單次覆寫 ZIP 路徑
 
 ```sh
@@ -147,7 +180,7 @@ npm run scan
 - 產生清單時，文案以 TXT 內容為準。保留既有 ID 與素材資料夾路徑，可接續原商品；後續預檢仍會核對文案、ZIP 與設定是否符合進度紀錄。
 - 任一資料夾缺檔、多檔、文案無法解析、ZIP 不合規格或 ID 衝突，整次產生會停止，原清單保留。執行中的工具若持有 `run.lock`，也會先停止掃描。
 
-`--scan` 完成清單產生後即結束，不需登入或開啟瀏覽器。請再執行預檢與續跑指令；`--scan` 需與 `--check`、`--login`、`--resume`、`--clear-items`、`--clear-results`、`--id`、`--zip`、`--attach-url` 分開使用。
+`--scan` 完成清單產生後即結束，不需登入或開啟瀏覽器。請再執行預檢與續跑指令；`--scan` 需與 `--check`、`--login`、`--resume`、`--clear-items`、`--clear-results`、`--clear-sticker`、`--id`、`--zip`、`--attach-url` 分開使用。
 
 ### 文案格式
 
@@ -367,7 +400,7 @@ node run.cjs --resume --auto
 ## 更新舊版
 
 1. 在舊工具終端機按 Ctrl+C，結束執行中的程序。
-2. 將 `core.cjs`、`run.cjs`、`line-site.cjs`、`image-verification.cjs`、`scan.cjs` 一起更新到原專案資料夾。使用 `npm run scan`、`npm run clear-items` 或 `npm run clear-results` 時，也需同步更新 `package.json` 的指令設定。
+2. 將 `core.cjs`、`run.cjs`、`line-site.cjs`、`image-verification.cjs`、`scan.cjs`、`sticker-cleanup.cjs` 一起更新到原專案資料夾。使用 npm 指令時，也需同步更新 `package.json` 的指令設定。
 3. 保留自己的 `items.json`、`line-auth.json`、`results/` 與素材 ZIP；不要用範例清單覆蓋現有清單。
 4. 在直接包含新版 `run.cjs` 的資料夾執行預檢，再以 `--resume --auto` 續跑。
 
@@ -396,13 +429,15 @@ node run.cjs --resume --auto
 ```sh
 npm test
 npm run test:scan
+npm run test:sticker-cleanup
 npm run test:announcements
 ```
 
-- `npm test`：本機核心、CLI 與掃描測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生、清空清單與結果資料夾，以及執行鎖，不需 Chromium。
+- `npm test`：本機核心、CLI、掃描與素材備份清除測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生、清空清單與結果資料夾、素材備份與執行鎖，不需 Chromium。
 - `npm run test:scan`：單獨執行掃描與文案解析測試，包含兩種文案格式、張數推算、保留既有 ID、錯誤時保留清單與自訂路徑。
+- `npm run test:sticker-cleanup`：以暫存素材測試備份命名、同名流水號、內容核對、來源異動、失敗時保留資料、執行鎖與 CLI 路徑。
 - `npm run test:announcements`：以 Chromium 執行本機 HTML fixtures，檢查多層公告、延遲公告與勾選後關閉等行為；需先安裝瀏覽器。
 
-核心與 CLI 測試使用獨立的 `test/fixtures/items.json`，掃描測試使用暫存素材，不會依賴或改寫自己的清單與進度。
+核心與 CLI 測試使用獨立的 `test/fixtures/items.json`，掃描與素材備份清除測試使用暫存素材，不會依賴或改寫自己的清單、進度與素材。
 
 上述測試不會登入或上傳到 LINE。`validation-report.json` 是先前的驗證紀錄，最新結果請以實際執行測試為準。

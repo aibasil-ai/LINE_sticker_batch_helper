@@ -8,6 +8,31 @@ const LANGUAGE_NAMES = new Map([
   ['english', 'en'], ['英文', 'en'], ['en', 'en'],
   ['日本語', 'ja'], ['日文', 'ja'], ['ja', 'ja']
 ]);
+const TITLE_PATTERN = /^(?:名稱|貼圖名稱|標題|Title)(?:\s*\/\s*Title)?\s*[:：]\s*(.*)$/i;
+
+function listingLanguage(line) {
+  const heading = line.replace(/^(?:【(.*)】|\[(.*)\])$/, (_, full, square) => full ?? square).trim().toLowerCase();
+  return LANGUAGE_NAMES.get(heading);
+}
+
+function parseTraditionalTitle(text, source = '文案檔') {
+  let language, title, chineseSections = 0;
+  for (const line of text.replace(/^\uFEFF/, '').split(/\r\n?|\n/)) {
+    const trimmed = line.trim(), nextLanguage = listingLanguage(trimmed);
+    if (nextLanguage) {
+      language = nextLanguage;
+      if (language === 'zh-Hant' && ++chineseSections > 1) throw new Error(source + '：重複繁體中文段落');
+      continue;
+    }
+    if (language !== 'zh-Hant') continue;
+    const match = trimmed.match(TITLE_PATTERN);
+    if (!match) continue;
+    if (title !== undefined) throw new Error(source + '：重複繁體中文貼圖名稱');
+    title = match[1].trim();
+  }
+  if (!title) throw new Error(source + '：缺少繁體中文貼圖名稱');
+  return title;
+}
 
 function parseListingCopy(text, source = '文案檔') {
   const copies = {}, fields = {};
@@ -16,8 +41,7 @@ function parseListingCopy(text, source = '文案檔') {
   const lines = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n');
   for (const [index, line] of lines.entries()) {
     const trimmed = line.trim();
-    const heading = trimmed.replace(/^(?:【(.*)】|\[(.*)\])$/, (_, full, square) => full ?? square).trim().toLowerCase();
-    const nextLanguage = LANGUAGE_NAMES.get(heading);
+    const nextLanguage = listingLanguage(trimmed);
     if (nextLanguage) {
       if (copies[nextLanguage]) fail('重複語言段落：' + nextLanguage);
       language = nextLanguage; field = null;
@@ -27,7 +51,7 @@ function parseListingCopy(text, source = '文案檔') {
     // A listing may include a document title or counting rules before the first language.
     if (!language) continue;
     if (/^(?:名稱|貼圖名稱|標題|說明|商品說明)計數\s*[:：]/.test(trimmed)) { field = null; continue; }
-    const title = trimmed.match(/^(?:名稱|貼圖名稱|標題|Title)(?:\s*\/\s*Title)?\s*[:：]\s*(.*)$/i);
+    const title = trimmed.match(TITLE_PATTERN);
     const description = trimmed.match(/^(?:說明|商品說明|Description)(?:\s*\/\s*Description)?\s*[:：]\s*(.*)$/i);
     if (title || description) {
       field = title ? 'title' : 'description';
@@ -120,4 +144,4 @@ function generateItems(configFile, directory) {
   }
 }
 
-module.exports = { parseListingCopy, generateItems };
+module.exports = { parseListingCopy, parseTraditionalTitle, generateItems };
