@@ -35,6 +35,24 @@ function clearItems(configFile) {
     fs.unlinkSync(lockFile);
   }
 }
+function clearResults(configFile) {
+  const resultsDir = path.join(path.dirname(path.resolve(configFile)), 'results');
+  const lockFile = path.join(resultsDir, 'run.lock');
+  fs.mkdirSync(resultsDir, { recursive: true });
+  try {
+    fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, started: new Date().toISOString() }), { flag: 'wx' });
+  } catch (error) {
+    if (error.code === 'EEXIST') throw new Error('已有 run.lock。請先結束使用這份清單的工具，再清空 results 資料夾。');
+    throw error;
+  }
+  try {
+    const entries = fs.readdirSync(resultsDir).filter(name => name !== 'run.lock');
+    for (const name of entries) fs.rmSync(path.join(resultsDir, name), { recursive: true, force: true });
+    return { resultsDir, cleared: entries.length };
+  } finally {
+    fs.unlinkSync(lockFile);
+  }
+}
 // Conservative LINE-style estimate. The website's own counter remains authoritative.
 function textUnits(value) {
   return Array.from(value).reduce((sum, c) => sum + (c.codePointAt(0) <= 0x7e ? 1 : 2), 0);
@@ -42,7 +60,7 @@ function textUnits(value) {
 function sha256(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
 function parseArgs(args) {
   const opts = {};
-  const switches = new Set(['--check', '--login', '--resume', '--help', '--auto', '--scan', '--clear-items']);
+  const switches = new Set(['--check', '--login', '--resume', '--help', '--auto', '--scan', '--clear-items', '--clear-results']);
   const values = new Set(['--id', '--zip', '--items', '--attach-url', '--scan-dir']);
   for (let i = 0; i < args.length; i++) {
     const key = args[i];
@@ -54,6 +72,9 @@ function parseArgs(args) {
   }
   if (opts['clear-items'] && Object.keys(opts).some(key => !['clear-items', 'items', 'help'].includes(key))) {
     throw new Error('--clear-items 只清空清單，請與其他操作參數分開使用（可搭配 --items）');
+  }
+  if (opts['clear-results'] && Object.keys(opts).some(key => !['clear-results', 'items', 'help'].includes(key))) {
+    throw new Error('--clear-results 只清空 results 資料夾，請與其他操作參數分開使用（可搭配 --items）');
   }
   if (opts.zip && !opts.id) throw new Error('--zip 必須搭配 --id，避免覆蓋到多組');
   if (opts['attach-url'] && !opts.id) throw new Error('--attach-url 必須搭配 --id');
@@ -166,4 +187,4 @@ function fingerprint(item, zipHash) {
   return sha256(JSON.stringify({ zipHash, languages: item.languages, copyright: item.copyright,
     stickerCount: item.stickerCount, useAI: item.useAI, autoStartSale: item.autoStartSale, priceTier: item.priceTier }));
 }
-module.exports = { readJSON, writeJSON, clearItems, textUnits, parseArgs, productFromURL, loadConfig, validateConfig, inspectZip, fingerprint };
+module.exports = { readJSON, writeJSON, clearItems, clearResults, textUnits, parseArgs, productFromURL, loadConfig, validateConfig, inspectZip, fingerprint };

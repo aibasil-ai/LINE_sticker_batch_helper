@@ -52,6 +52,7 @@ node run.cjs --login
 | 掃描預設資料夾並產生清單 | `npm run scan` 或 `node run.cjs --scan` |
 | 掃描指定資料夾 | `npm run scan -- --scan-dir "其他素材資料夾"` |
 | 清空清單中的所有組別 | `npm run clear-items` 或 `node run.cjs --clear-items` |
+| 清空本機進度與執行結果 | `npm run clear-results` 或 `node run.cjs --clear-results` |
 | 檢查全部啟用組別，不連線 LINE | `node run.cjs --check --auto` |
 | 整批執行或續跑 | `node run.cjs --resume --auto` |
 | 只檢查指定組別 | `node run.cjs --check --auto --id ibusuki-002` |
@@ -81,6 +82,27 @@ npm run clear-items -- --items "另一份清單.json"
 指令會將 `items` 設為 `[]`，並顯示清除的組數；其他共用設定、素材、登入狀態與 `results/` 進度都會保留。空清單或省略 `items` 時也可執行，清除組數為 0。完成後可再執行 `npm run scan` 重新產生組別。
 
 清除過程不需登入或開啟瀏覽器。若清單正由其他程序使用（存在 `run.lock`），會停止並保留原清單。`--clear-items` 除了 `--items` 與 `--help` 外，不能搭配其他操作參數。
+
+### 清空 results 資料夾
+
+清空清單所在目錄的 `results/`：
+
+```sh
+npm run clear-results
+```
+
+也可直接執行，或搭配 `--items` 指定另一份清單對應的 `results/`：
+
+```sh
+node run.cjs --clear-results
+npm run clear-results -- --items "另一份清單.json"
+```
+
+指令會刪除 `progress.json`、`summary.json`、隱藏檔及所有子資料夾，保留 `results/` 本身，並顯示清除的項目數（直屬檔案或子資料夾各計 1 個）。空資料夾、尚未建立 `results/`，或清單的 `items` 已清空時也可執行。
+
+清除會移除本機進度與既有商品的對應紀錄；之後再執行批次，會依清單重新開始建立草稿。清單設定、素材與登入狀態會保留。
+
+`results/` 的位置以清單所在目錄為準，不受 `baseDir` 影響。清除期間會持有執行鎖；若已有 `run.lock`，指令會停止並保留結果。`--clear-results` 除了 `--items` 與 `--help` 外，不能搭配其他操作參數，包含 `--clear-items`。
 
 ### 單次覆寫 ZIP 路徑
 
@@ -125,7 +147,7 @@ npm run scan
 - 產生清單時，文案以 TXT 內容為準。保留既有 ID 與素材資料夾路徑，可接續原商品；後續預檢仍會核對文案、ZIP 與設定是否符合進度紀錄。
 - 任一資料夾缺檔、多檔、文案無法解析、ZIP 不合規格或 ID 衝突，整次產生會停止，原清單保留。執行中的工具若持有 `run.lock`，也會先停止掃描。
 
-`--scan` 完成清單產生後即結束，不需登入或開啟瀏覽器。請再執行預檢與續跑指令；`--scan` 需與 `--check`、`--login`、`--resume`、`--clear-items`、`--id`、`--zip`、`--attach-url` 分開使用。
+`--scan` 完成清單產生後即結束，不需登入或開啟瀏覽器。請再執行預檢與續跑指令；`--scan` 需與 `--check`、`--login`、`--resume`、`--clear-items`、`--clear-results`、`--id`、`--zip`、`--attach-url` 分開使用。
 
 ### 文案格式
 
@@ -345,7 +367,7 @@ node run.cjs --resume --auto
 ## 更新舊版
 
 1. 在舊工具終端機按 Ctrl+C，結束執行中的程序。
-2. 將 `core.cjs`、`run.cjs`、`line-site.cjs`、`image-verification.cjs`、`scan.cjs` 一起更新到原專案資料夾。使用 `npm run scan` 或 `npm run clear-items` 時，也需同步更新 `package.json` 的指令設定。
+2. 將 `core.cjs`、`run.cjs`、`line-site.cjs`、`image-verification.cjs`、`scan.cjs` 一起更新到原專案資料夾。使用 `npm run scan`、`npm run clear-items` 或 `npm run clear-results` 時，也需同步更新 `package.json` 的指令設定。
 3. 保留自己的 `items.json`、`line-auth.json`、`results/` 與素材 ZIP；不要用範例清單覆蓋現有清單。
 4. 在直接包含新版 `run.cjs` 的資料夾執行預檢，再以 `--resume --auto` 續跑。
 
@@ -377,7 +399,7 @@ npm run test:scan
 npm run test:announcements
 ```
 
-- `npm test`：本機核心、CLI 與掃描測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生、清空清單與執行鎖，不需 Chromium。
+- `npm test`：本機核心、CLI 與掃描測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生、清空清單與結果資料夾，以及執行鎖，不需 Chromium。
 - `npm run test:scan`：單獨執行掃描與文案解析測試，包含兩種文案格式、張數推算、保留既有 ID、錯誤時保留清單與自訂路徑。
 - `npm run test:announcements`：以 Chromium 執行本機 HTML fixtures，檢查多層公告、延遲公告與勾選後關閉等行為；需先安裝瀏覽器。
 

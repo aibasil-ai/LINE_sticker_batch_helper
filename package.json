@@ -6,6 +6,7 @@
   "scripts": {
     "scan": "node run.cjs --scan",
     "clear-items": "node run.cjs --clear-items",
+    "clear-results": "node run.cjs --clear-results",
     "check": "node run.cjs --check",
     "login": "node run.cjs --login",
     "start": "node run.cjs",

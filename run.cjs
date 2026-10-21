@@ -2,17 +2,27 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline/promises');
-const { readJSON, writeJSON, clearItems, textUnits, parseArgs, productFromURL, loadConfig, inspectZip, fingerprint } = require('./core.cjs');
+const { readJSON, writeJSON, clearItems, clearResults, textUnits, parseArgs, productFromURL, loadConfig, inspectZip, fingerprint } = require('./core.cjs');
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
-    console.log('node run.cjs [--check|--login|--resume] [--auto] [--items items.json] [--id ID] [--zip PATH] [--attach-url URL]\nnode run.cjs --scan [--scan-dir sticker] [--items items.json]\nnode run.cjs --clear-items [--items items.json]'); return;
+    console.log([
+      'node run.cjs [--check|--login|--resume] [--auto] [--items items.json] [--id ID] [--zip PATH] [--attach-url URL]',
+      'node run.cjs --scan [--scan-dir sticker] [--items items.json]',
+      'node run.cjs --clear-items [--items items.json]',
+      'node run.cjs --clear-results [--items items.json]'
+    ].join('\n')); return;
   }
   const configFile = path.resolve(opts.items || path.join(__dirname, 'items.json'));
   if (opts['clear-items']) {
     const result = clearItems(configFile);
     console.log(`已清除 ${result.cleared} 組：${result.configFile}（items 已設為空陣列）。`);
+    return;
+  }
+  if (opts['clear-results']) {
+    const result = clearResults(configFile);
+    console.log(`已清除 ${result.cleared} 個項目：${result.resultsDir}（已保留 results 資料夾）。`);
     return;
   }
   if (opts.scan) {

@@ -111,6 +111,67 @@ async function runCLITests() {
     result = await execute(['--clear-items', '--help']);
     assert.equal(result.code, 0, result.messages); assert.match(result.messages, /--clear-items/);
     assert.deepEqual(fs.readFileSync(configFile), beforeClear); passed.push('說明列出清除指令，查看說明不改寫清單');
+    const resultsDir = path.dirname(stateFile), otherResultsDir = path.join(path.dirname(otherFile), 'results');
+    core.writeJSON(path.join(resultsDir, 'nested', 'reports', 'details.json'), { test: true });
+    fs.writeFileSync(path.join(resultsDir, '.summary.json.tmp'), 'temporary');
+    const outsideResults = [configFile, authFile, archive].map(file => [file, fs.readFileSync(file)]);
+    result = await execute(['--clear-results']);
+    assert.equal(result.code, 0, result.messages); assert.equal(result.browserCalls, 0); assert.match(result.messages, /已清除 4 個項目/);
+    assert.equal(fs.statSync(resultsDir).isDirectory(), true); assert.deepEqual(fs.readdirSync(resultsDir), []);
+    for (const [file, before] of outsideResults) assert.deepEqual(fs.readFileSync(file), before);
+    passed.push('清空 results 的進度、報告、隱藏檔與子資料夾，保留主資料夾及其他資料');
+    result = await execute(['--clear-results']);
+    assert.equal(result.code, 0, result.messages); assert.match(result.messages, /已清除 0 個項目/);
+    assert.deepEqual(fs.readdirSync(resultsDir), []); passed.push('空 results 資料夾可重複清除');
+    fs.rmdirSync(otherResultsDir);
+    const otherConfigBefore = fs.readFileSync(otherFile);
+    result = await execute(['--clear-results', '--items', otherFile]);
+    assert.equal(result.code, 0, result.messages); assert.match(result.messages, /已清除 0 個項目/);
+    assert.deepEqual(fs.readdirSync(otherResultsDir), []); assert.deepEqual(fs.readFileSync(otherFile), otherConfigBefore);
+    passed.push('items 為空且尚無 results 資料夾時也可清除');
+    seed('draft_ready'); core.writeJSON(summaryFile, [{ stage: 'draft_ready' }]);
+    const resultFiles = [stateFile, summaryFile].map(file => [file, fs.readFileSync(file)]);
+    fs.writeFileSync(lockFile, 'another process'); result = await execute(['--clear-results']);
+    assert.equal(result.code, 1); assert.equal(result.browserCalls, 0); assert.match(result.messages, /run.lock/);
+    assert.equal(fs.readFileSync(lockFile, 'utf8'), 'another process');
+    for (const [file, before] of resultFiles) assert.deepEqual(fs.readFileSync(file), before);
+    fs.unlinkSync(lockFile); passed.push('清空 results 遇到執行鎖時保留所有結果與其他程序的鎖');
+    for (const args of [['--scan'], ['--check'], ['--login'], ['--resume'], ['--auto'], ['--id', 'ibusuki-002'],
+      ['--zip', 'override.zip'], ['--attach-url', 'https://creator.line.me/my/123/sticker/4567890'], ['--scan-dir', 'sticker'], ['--clear-items']]) {
+      result = await execute(['--clear-results', ...args]);
+      assert.equal(result.code, 1); assert.equal(result.browserCalls, 0); assert.match(result.messages, /分開使用/);
+      for (const [file, before] of [...outsideResults, ...resultFiles]) assert.deepEqual(fs.readFileSync(file), before);
+      assert.equal(fs.existsSync(lockFile), false);
+    }
+    passed.push('清空 results 拒絕與其他操作混用，包含同時清空 items');
+    const realRemove = fs.rmSync;
+    fs.rmSync = (file, options) => {
+      assert.equal(fs.existsSync(lockFile), true, '清除期間必須持有執行鎖');
+      if (file === stateFile) throw new Error('測試：無法刪除進度檔');
+      return realRemove(file, options);
+    };
+    try { result = await execute(['--clear-results']); }
+    finally { fs.rmSync = realRemove; }
+    assert.equal(result.code, 1); assert.match(result.messages, /無法刪除進度檔/);
+    assert.equal(fs.existsSync(lockFile), false); assert.deepEqual(fs.readFileSync(stateFile), resultFiles[0][1]);
+    passed.push('清除檔案期間持有執行鎖，刪除失敗時回報錯誤並釋放鎖');
+    core.writeJSON(summaryFile, [{ stage: 'draft_ready' }]);
+    core.writeJSON(path.join(otherResultsDir, 'progress.json'), { test: true });
+    const clearChild = spawnSync(process.execPath, [scriptPath, '--clear-results', '--items', path.relative(folder, otherFile)], { cwd: folder, encoding: 'utf8' });
+    assert.equal(clearChild.status, 0, clearChild.stderr); assert.match(clearChild.stdout, /已清除 1 個項目/);
+    assert.deepEqual(fs.readdirSync(otherResultsDir), []); assert.deepEqual(fs.readFileSync(otherFile), otherConfigBefore);
+    for (const [file, before] of resultFiles) assert.deepEqual(fs.readFileSync(file), before);
+    passed.push('可從其他工作目錄清空指定清單的 results，支援空白相對路徑且不影響其他清單');
+    const externalDir = path.join(folder, 'external-data'), externalFile = path.join(externalDir, 'keep.json');
+    core.writeJSON(externalFile, { keep: true });
+    fs.symlinkSync(externalDir, path.join(otherResultsDir, 'linked-data'), process.platform === 'win32' ? 'junction' : 'dir');
+    result = await execute(['--clear-results', '--items', otherFile]);
+    assert.equal(result.code, 0, result.messages); assert.deepEqual(fs.readdirSync(otherResultsDir), []);
+    assert.deepEqual(core.readJSON(externalFile), { keep: true }); passed.push('移除 results 內的目錄連結時保留連結指向的外部資料');
+    result = await execute(['--clear-results', '--help']);
+    assert.equal(result.code, 0, result.messages); assert.match(result.messages, /node run\.cjs --clear-results/);
+    for (const [file, before] of resultFiles) assert.deepEqual(fs.readFileSync(file), before);
+    passed.push('說明列出清空 results 指令，查看說明不清除結果');
     return { passed: passed.length, tests: passed };
   } finally {
     assert.ok(path.resolve(folder).startsWith(path.resolve(os.tmpdir()) + path.sep + 'line-sticker-cli-'));
