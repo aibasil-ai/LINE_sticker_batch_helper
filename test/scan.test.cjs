@@ -60,6 +60,46 @@ function runScanTests() {
       const copy = structuredClone(languages); copy.en.description = 'First line.\n\nSecond line.';
       assert.deepEqual(parseListingCopy(listing(copy)), copy);
     });
+    check('略過文案末尾的主題、製作及補充備註，支援括號、BOM 與 CRLF', () => {
+      for (const heading of ['主題備註：製作參考。', '製作備註（非商品說明）：製作參考。', '備註: 製作參考。', '補充說明 (不上架) : 製作參考。']) {
+        const text = '\uFEFF' + listing(languages, true) + '\n' + heading + '\n後續製作說明。\n商品說明：備註內的示例，不應上架。\n';
+        assert.deepEqual(parseListingCopy(text.replace(/\n/g, '\r\n')), languages);
+      }
+    });
+    check('沒有計數行時仍能區分多行商品說明與備註區塊', () => {
+      const copy = structuredClone(languages); copy.en.description = 'First line.\n\nSecond line.';
+      const text = listing(copy).replace(/^(?:名稱|說明)計數：.*\n?/gm, '') + '\n備註：製作參考。\n' + '補充內容。'.repeat(100);
+      assert.deepEqual(parseListingCopy(text), copy);
+    });
+    check('文首或文末的計數方法及後續補充視為附註，保留各語言的名稱與商品說明', () => {
+      for (const heading of ['計數方式', '計數規則', '計算方式', '計算規則']) {
+        const text = heading + '：全形 2，半形 1。\n補充計算資訊。\n\n' + listing() + '\n' + heading + '：全形 2，半形 1。\n其他製作資訊。';
+        assert.deepEqual(parseListingCopy(text), languages);
+      }
+    });
+    check('備註可置於語言段落之間，遇到下一個語言標題後恢復解析', () => {
+      const text = listing().replace('\nEnglish\n', '\n主題備註：製作參考。\n貼圖名稱：備註示例\n商品說明：備註示例\n\nEnglish\n');
+      assert.deepEqual(parseListingCopy(text), languages);
+    });
+    check('支援備註後仍拒絕缺少語言、重複欄位、重複語言、過長文案及未知欄位', () => {
+      const notes = '\n備註：製作參考。\n補充內容。';
+      assert.throws(() => parseListingCopy(listing().split('日本語')[0] + notes), /缺少 ja/);
+      assert.throws(() => parseListingCopy(listing() + notes + '\nEnglish'), /重複語言/);
+      assert.throws(() => parseListingCopy(listing() + '\n貼圖名稱：重複名稱' + notes), /重複欄位/);
+      assert.throws(() => parseListingCopy(listing() + '\n未知欄位：資料'), /無法辨識/);
+      const copy = structuredClone(languages); copy.ja.description = '字'.repeat(81);
+      assert.throws(() => parseListingCopy(listing(copy) + notes), /上限/);
+    });
+    check('掃描含備註的文案時只寫入三語上架內容，保留 TXT 原文', folder => {
+      const file = configAt(folder), root = path.join(folder, 'sticker');
+      const first = packAt(root, '002', 8, listing(languages, true) + '\n主題備註：製作參考。\n補充內容。');
+      const second = packAt(root, '006', 8, listing() + '\n製作備註（非商品說明）：製作參考。');
+      const originals = [first.copyFile, second.copyFile].map(file => [file, fs.readFileSync(file)]);
+      const result = generateItems(file), saved = core.readJSON(file);
+      assert.equal(result.scanned.length, 2);
+      assert.deepEqual(saved.items.map(item => item.languages), [languages, languages]);
+      for (const [file, before] of originals) assert.deepEqual(fs.readFileSync(file), before);
+    });
     check('缺少語言、重複段落或欄位及過長文案會報錯', () => {
       assert.throws(() => parseListingCopy(listing().split('日本語')[0]), /缺少 ja/);
       assert.throws(() => parseListingCopy(listing() + '\nEnglish'), /重複語言/);

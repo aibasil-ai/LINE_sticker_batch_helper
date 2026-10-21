@@ -9,6 +9,7 @@ const LANGUAGE_NAMES = new Map([
   ['日本語', 'ja'], ['日文', 'ja'], ['ja', 'ja']
 ]);
 const TITLE_PATTERN = /^(?:名稱|貼圖名稱|標題|Title)(?:\s*\/\s*Title)?\s*[:：]\s*(.*)$/i;
+const ANNOTATION_PATTERN = /^(?:主題備註|製作備註|備註|補充說明|計[數算](?:方式|規則))(?:\s*(?:（[^）]*）|\([^)]*\)))?\s*[:：]/;
 
 function listingLanguage(line) {
   const heading = line.replace(/^(?:【(.*)】|\[(.*)\])$/, (_, full, square) => full ?? square).trim().toLowerCase();
@@ -16,15 +17,16 @@ function listingLanguage(line) {
 }
 
 function parseTraditionalTitle(text, source = '文案檔') {
-  let language, title, chineseSections = 0;
+  let language, title, chineseSections = 0, inNotes = false;
   for (const line of text.replace(/^\uFEFF/, '').split(/\r\n?|\n/)) {
     const trimmed = line.trim(), nextLanguage = listingLanguage(trimmed);
     if (nextLanguage) {
-      language = nextLanguage;
+      language = nextLanguage; inNotes = false;
       if (language === 'zh-Hant' && ++chineseSections > 1) throw new Error(source + '：重複繁體中文段落');
       continue;
     }
-    if (language !== 'zh-Hant') continue;
+    if (ANNOTATION_PATTERN.test(trimmed)) { inNotes = true; continue; }
+    if (language !== 'zh-Hant' || inNotes) continue;
     const match = trimmed.match(TITLE_PATTERN);
     if (!match) continue;
     if (title !== undefined) throw new Error(source + '：重複繁體中文貼圖名稱');
@@ -36,7 +38,7 @@ function parseTraditionalTitle(text, source = '文案檔') {
 
 function parseListingCopy(text, source = '文案檔') {
   const copies = {}, fields = {};
-  let language, field;
+  let language, field, inNotes = false;
   const fail = message => { throw new Error(source + '：' + message); };
   const lines = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n');
   for (const [index, line] of lines.entries()) {
@@ -44,12 +46,13 @@ function parseListingCopy(text, source = '文案檔') {
     const nextLanguage = listingLanguage(trimmed);
     if (nextLanguage) {
       if (copies[nextLanguage]) fail('重複語言段落：' + nextLanguage);
-      language = nextLanguage; field = null;
+      language = nextLanguage; field = null; inNotes = false;
       copies[language] = {}; fields[language] = new Set();
       continue;
     }
+    if (ANNOTATION_PATTERN.test(trimmed)) { inNotes = true; field = null; continue; }
     // A listing may include a document title or counting rules before the first language.
-    if (!language) continue;
+    if (!language || inNotes) continue;
     if (/^(?:名稱|貼圖名稱|標題|說明|商品說明)計數\s*[:：]/.test(trimmed)) { field = null; continue; }
     const title = trimmed.match(TITLE_PATTERN);
     const description = trimmed.match(/^(?:說明|商品說明|Description)(?:\s*\/\s*Description)?\s*[:：]\s*(.*)$/i);

@@ -46,6 +46,14 @@ async function runStickerCleanupTests() {
       assert.throws(() => parseTraditionalTitle('繁體中文\n貼圖名稱：一\n貼圖名稱：二'), /重複/);
       assert.throws(() => parseTraditionalTitle('繁體中文\n貼圖名稱：一\n繁體中文\n貼圖名稱：二'), /重複/);
     });
+    await check('備份命名忽略備註中的名稱欄位，備份仍保留完整文案', project => {
+      const source = pack(project, '001');
+      fs.appendFileSync(source.copy, '\n製作備註（非商品說明）：製作參考。\n貼圖名稱：備註內的示例名稱\n商品說明：備註內的示例說明\n');
+      const before = fs.readFileSync(source.copy), result = cleanup(project);
+      assert.equal(result.groups[0].title, '海岸小列車與小海龜');
+      assert.equal(result.groups[0].backupDir, backupAt(project, '海岸小列車與小海龜'));
+      assert.deepEqual(fs.readFileSync(path.join(result.groups[0].backupDir, 'listing-copy.txt')), before);
+    });
     await check('全部備份核對後清除所有檔案，保留來源資料夾、檔名、相對路徑與專案其他資料', project => {
       const first = pack(project, '002', '星旅小火車與柚子嚮導'), second = pack(project, '003');
       const extra = put(path.join(first.folder, 'nested', 'deep', 'image.bin'), Buffer.from([6, 7, 8]));

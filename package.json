@@ -17,7 +17,8 @@
     "test:scan": "node test/scan.test.cjs",
     "test:sticker-cleanup": "node test/sticker-cleanup.test.cjs",
     "test:clear-all": "node test/clear-all.test.cjs",
-    "test:announcements": "node test/announcements.test.cjs"
+    "test:announcements": "node test/announcements.test.cjs",
+    "test:price": "node test/price.test.cjs"
   },
   "devDependencies": { "@playwright/test": "latest" }
 }

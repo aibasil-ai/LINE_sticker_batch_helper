@@ -195,20 +195,32 @@ async function uploadImages(page, config, item, row, save, ask) {
   row.stage = 'images_verified'; save();
   await testId(page, 'btn-back').click();
 }
-async function setPrice(page, item, row) {
+async function openPriceSettings(page, timeoutMs) {
+  const tab = testId(page, 'tab-price'), select = testId(page, 'select-price-tier');
+  const selectedTab = page.locator('[data-test="tab-price"].selected, [data-test="tab-price"][aria-selected="true"]');
+  await expect.poll(async () => {
+    if (await select.isVisible() || await selectedTab.isVisible()) return true;
+    return await tab.isVisible() && await tab.isEnabled();
+  }, { timeout: timeoutMs, intervals: [100, 200, 400], message: '等待價格頁籤或價格表單載入' }).toBe(true);
+  if (!await select.isVisible() && !await selectedTab.isVisible()) await tab.click({ timeout: timeoutMs });
+  await expect(select, '價格表單尚未載入完成').toBeVisible({ timeout: timeoutMs });
+  await expect(select, '價格表單尚未可用').toBeEnabled({ timeout: timeoutMs });
+  return select;
+}
+async function setPrice(page, item, row, { timeoutMs = 20000, announcementOptions } = {}) {
   await page.goto(row.productURL, { waitUntil: 'domcontentloaded' });
   await ensureOrigin(page);
-  await dismissAnnouncements(page);
-  await testId(page, 'tab-price').click();
-  const select = testId(page, 'select-price-tier');
-  await expect(select).toBeVisible();
-  if (!await select.locator(`option[value="${item.priceTier}"]`).count()) throw new Error('後台沒有指定 priceTier：' + item.priceTier);
-  await select.selectOption(item.priceTier);
+  await dismissAnnouncements(page, announcementOptions);
+  const select = await openPriceSettings(page, timeoutMs);
+  await expect(select.locator(`option[value="${item.priceTier}"]`), '後台沒有指定 priceTier：' + item.priceTier).toHaveCount(1, { timeout: timeoutMs });
+  await select.selectOption(item.priceTier, { timeout: timeoutMs });
   console.log('價格選項：' + await select.locator('option:checked').innerText());
-  await testId(page, 'button-save').click();
+  await testId(page, 'button-save').click({ timeout: timeoutMs });
   await optionalOK(page);
   await page.reload({ waitUntil: 'domcontentloaded' });
-  if (!await visible(select)) await testId(page, 'tab-price').click();
-  await expect(select).toHaveValue(item.priceTier);
+  await ensureOrigin(page);
+  await dismissAnnouncements(page, announcementOptions);
+  const persisted = await openPriceSettings(page, timeoutMs);
+  await expect(persisted, '重新載入後的價格與指定 priceTier 不一致').toHaveValue(item.priceTier, { timeout: timeoutMs });
 }
 module.exports = { createDraft, uploadImages, setPrice, openManagement, dismissAnnouncements, verifyUpload };
