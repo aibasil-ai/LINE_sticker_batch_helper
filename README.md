@@ -51,6 +51,7 @@ node run.cjs --login
 | 查看參數 | `node run.cjs --help` |
 | 掃描預設資料夾並產生清單 | `npm run scan` 或 `node run.cjs --scan` |
 | 掃描指定資料夾 | `npm run scan -- --scan-dir "其他素材資料夾"` |
+| 一次備份清除素材、清空清單與結果 | `npm run clear-all` |
 | 清空清單中的所有組別 | `npm run clear-items` 或 `node run.cjs --clear-items` |
 | 清空本機進度與執行結果 | `npm run clear-results` 或 `node run.cjs --clear-results` |
 | 備份後清空素材子資料夾的檔案 | `npm run clear-sticker` 或 `node run.cjs --clear-sticker` |
@@ -64,6 +65,22 @@ node run.cjs --login
 要處理全部組別，請勿加上 `--id`。即使指定 `--id`，`enabled: false` 的項目也不會執行。`--check` 與 `--login` 不可同時使用。
 
 也可使用 `npm run check -- --auto`、`npm run resume -- --auto` 與 `npm run login`；npm 的額外參數需放在 `--` 之後。
+
+### 一次執行全部清理
+
+執行單一指令，依序完成素材、清單與執行結果的清理：
+
+```sh
+npm run clear-all
+```
+
+執行順序如下：
+
+1. `npm run clear-sticker`：備份全部素材並核對內容，成功後清除來源檔案，保留素材資料夾。
+2. `npm run clear-items`：將 `items.json` 的 `items` 設為 `[]`。
+3. `npm run clear-results`：清空 `results/` 的進度與執行結果，保留 `results/` 本身。
+
+**任一步驟失敗就停止後續步驟。** 素材備份未完成時，清單與進度也會保留。此指令使用專案預設的 `sticker/`、`items.json` 與 `results/`，沿用各步驟的備份命名及執行鎖規則；備份會留在 `sticker-backups/`。
 
 ### 清空貼圖清單
 
@@ -170,15 +187,18 @@ npm run scan
 
 程式會讀取 ZIP 與文案，將各組的 `zip`、`stickerCount` 及 `languages` 寫入 `items.json`。新增項目的 ID 使用資料夾名稱，例如 `004`；`enabled` 預設為 `true`。清單中的 `defaults`、登入與圖片核對等共用設定會保留。
 
+資料夾編號不需要連續，也不需要每個資料夾都有素材。例如預先建立 `001`～`030`，只在 `001`、`007`、`025` 放入 ZIP 與 TXT，程式就會處理這三組，略過其餘空資料夾，並顯示實際掃描組數與略過名單。
+
 ### 掃描規則與既有資料
 
-- 每個非隱藏直屬子資料夾內，必須恰有一個 `.zip` 與一個 UTF-8 `.txt`；檔名可自訂，副檔名不分大小寫。
+- 空資料夾或只有 `.DS_Store`、`.gitkeep` 等隱藏項目的資料夾會自動略過。其他非空的直屬子資料夾內，必須恰有一個 `.zip` 與一個 UTF-8 `.txt`；檔名可自訂，副檔名不分大小寫。
 - 只掃描一層子資料夾，忽略掃描根目錄的檔案、隱藏資料夾及 `__MACOSX`。
+- 所有子資料夾皆空，或掃描根目錄沒有貼圖子資料夾時，會顯示沒有可掃描的素材並正常結束，原清單與進度會保留。
 - 由 ZIP 的實際圖號推算 8、16、24、32 或 40 張貼圖，同時檢查檔名、結構與尺寸；張數會寫入各組，優先於 `defaults.stickerCount`。
 - 依 ZIP 所在資料夾對應既有項目，保留原有 ID、停用狀態與價格等個別設定。既有的 `ibusuki-002`、`starrail-003` 會沿用原 ID，ZIP 改名也能對應。
-- 既有項目維持原順序；新項目依資料夾名稱的數字順序加入。未出現在本次掃描範圍的既有項目會保留，可用 `enabled: false` 停用。
+- 既有項目維持原順序；新項目依資料夾名稱的數字順序加入。未出現在本次掃描範圍，或對應資料夾本次為空的既有項目會保留，可用 `enabled: false` 停用。
 - 產生清單時，文案以 TXT 內容為準。保留既有 ID 與素材資料夾路徑，可接續原商品；後續預檢仍會核對文案、ZIP 與設定是否符合進度紀錄。
-- 任一資料夾缺檔、多檔、文案無法解析、ZIP 不合規格或 ID 衝突，整次產生會停止，原清單保留。執行中的工具若持有 `run.lock`，也會先停止掃描。
+- 任一非空資料夾缺檔、多檔、文案無法解析、ZIP 不合規格或 ID 衝突，整次產生會停止，原清單保留。執行中的工具若持有 `run.lock`，也會先停止掃描。
 
 `--scan` 完成清單產生後即結束，不需登入或開啟瀏覽器。請再執行預檢與續跑指令；`--scan` 需與 `--check`、`--login`、`--resume`、`--clear-items`、`--clear-results`、`--clear-sticker`、`--id`、`--zip`、`--attach-url` 分開使用。
 
@@ -430,14 +450,16 @@ node run.cjs --resume --auto
 npm test
 npm run test:scan
 npm run test:sticker-cleanup
+npm run test:clear-all
 npm run test:announcements
 ```
 
-- `npm test`：本機核心、CLI、掃描與素材備份清除測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生、清空清單與結果資料夾、素材備份與執行鎖，不需 Chromium。
-- `npm run test:scan`：單獨執行掃描與文案解析測試，包含兩種文案格式、張數推算、保留既有 ID、錯誤時保留清單與自訂路徑。
+- `npm test`：本機核心、CLI、掃描、素材備份清除與整合清理測試，涵蓋文案、路徑、ZIP 預檢、內容指紋、進度、清單產生、清空清單與結果資料夾、素材備份與執行鎖，不需 Chromium。
+- `npm run test:scan`：單獨執行掃描與文案解析測試，包含兩種文案格式、張數推算、不連續編號、略過空資料夾、全部無素材時保留清單、保留既有 ID、錯誤時保留清單與自訂路徑。
 - `npm run test:sticker-cleanup`：以暫存素材測試備份命名、同名流水號、內容核對、來源異動、失敗時保留資料、執行鎖與 CLI 路徑。
+- `npm run test:clear-all`：在暫存專案實際執行整合清理，檢查順序、完整備份、清理結果，以及備份、執行鎖或清單錯誤時停止後續步驟。
 - `npm run test:announcements`：以 Chromium 執行本機 HTML fixtures，檢查多層公告、延遲公告與勾選後關閉等行為；需先安裝瀏覽器。
 
-核心與 CLI 測試使用獨立的 `test/fixtures/items.json`，掃描與素材備份清除測試使用暫存素材，不會依賴或改寫自己的清單、進度與素材。
+核心與 CLI 測試使用獨立的 `test/fixtures/items.json`，掃描、素材備份清除與整合清理測試使用暫存素材，不會依賴或改寫自己的清單、進度與素材。
 
 上述測試不會登入或上傳到 LINE。`validation-report.json` 是先前的驗證紀錄，最新結果請以實際執行測試為準。

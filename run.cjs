@@ -37,8 +37,13 @@ async function main() {
     const { generateItems } = require('./scan.cjs');
     const result = generateItems(configFile, opts['scan-dir']);
     console.log('掃描資料夾：' + result.scanDir);
+    if (result.skippedEmpty.length) console.log(`略過 ${result.skippedEmpty.length} 個空資料夾：${result.skippedEmpty.join('、')}`);
     for (const item of result.scanned) console.log(`[${item.id}] ${item.existing ? '更新' : '新增'}：${item.zip}（${item.stickerCount} 張）`);
-    console.log(`已產生 ${result.configFile}：掃描 ${result.scanned.length} 組，清單共 ${result.total} 組。尚未連線 LINE。`);
+    if (!result.scanned.length) {
+      console.log(`沒有可掃描的素材，原清單保留：${result.configFile}（清單共 ${result.total} 組）。尚未連線 LINE。`);
+      return;
+    }
+    console.log(`已產生 ${result.configFile}：掃描 ${result.scanned.length} 組，略過 ${result.skippedEmpty.length} 個空資料夾，清單共 ${result.total} 組。尚未連線 LINE。`);
     return;
   }
   const config = loadConfig(configFile, opts);

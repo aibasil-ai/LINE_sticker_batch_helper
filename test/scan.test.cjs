@@ -86,6 +86,59 @@ function runScanTests() {
       const before = fs.readFileSync(file); generateItems(file);
       assert.deepEqual(fs.readFileSync(file), before);
     });
+    check('30 個資料夾只在不連續編號放素材時，掃描有資料的組別並略過其餘空資料夾', folder => {
+      const file = configAt(folder), root = path.join(folder, 'sticker');
+      const names = Array.from({ length: 30 }, (_, index) => String(index + 1).padStart(3, '0'));
+      for (const name of names) fs.mkdirSync(path.join(root, name), { recursive: true });
+      packAt(root, '025', 24); packAt(root, '007', 16); packAt(root, '001');
+      const result = generateItems(file), expected = ['001', '007', '025'];
+      assert.deepEqual(result.scanned.map(item => item.id), expected);
+      assert.deepEqual(core.readJSON(file).items.map(item => item.id), expected);
+      assert.deepEqual(result.skippedEmpty, names.filter(name => !expected.includes(name)));
+      assert.equal(result.total, 3); assert.equal(fs.existsSync(path.join(folder, 'results', 'run.lock')), false);
+    });
+    check('略過空資料夾時保留對應的既有 ID、停用狀態、個別設定與進度', folder => {
+      const existing = { ...structuredClone(fixture.items[0]), enabled: false, priceTier: '7' };
+      const file = configAt(folder, { items: [existing] }), root = path.join(folder, 'sticker');
+      fs.mkdirSync(path.join(root, '002'), { recursive: true }); packAt(root, '007');
+      const stateFile = path.join(folder, 'results', 'progress.json');
+      core.writeJSON(stateFile, { version: 1, items: { [existing.id]: { stage: 'draft_ready' } } });
+      const progress = fs.readFileSync(stateFile), result = generateItems(file), saved = core.readJSON(file);
+      assert.deepEqual(result.skippedEmpty, ['002']); assert.equal(result.total, 2);
+      assert.deepEqual(saved.items[0], existing); assert.equal(saved.items[1].id, '007');
+      assert.deepEqual(fs.readFileSync(stateFile), progress);
+    });
+    check('只有隱藏檔的資料夾視為空，繼續掃描其他有效素材', folder => {
+      const file = configAt(folder), root = path.join(folder, 'sticker'), empty = path.join(root, '002');
+      fs.mkdirSync(path.join(empty, '.metadata'), { recursive: true });
+      fs.writeFileSync(path.join(empty, '.DS_Store'), 'metadata'); fs.writeFileSync(path.join(empty, '.gitkeep'), '');
+      packAt(root, '007');
+      const result = generateItems(file);
+      assert.deepEqual(result.skippedEmpty, ['002']); assert.deepEqual(result.scanned.map(item => item.id), ['007']);
+      assert.equal(fs.readFileSync(path.join(empty, '.DS_Store'), 'utf8'), 'metadata');
+    });
+    check('所有資料夾皆空時正常結束，原樣保留空清單、既有清單及省略 items 的設定與進度', folder => {
+      const file = path.join(folder, 'items.json'), root = path.join(folder, 'sticker');
+      for (let index = 1; index <= 30; index++) fs.mkdirSync(path.join(root, String(index).padStart(3, '0')), { recursive: true });
+      const stateFile = path.join(folder, 'results', 'progress.json');
+      core.writeJSON(stateFile, { version: 1, items: { existing: { stage: 'draft_ready' } } });
+      const progress = fs.readFileSync(stateFile);
+      for (const items of [[], fixture.items, undefined]) {
+        const config = { ...structuredClone(fixture), items };
+        if (items === undefined) delete config.items;
+        fs.writeFileSync(file, '\uFEFF' + JSON.stringify(config, null, 4) + '\r\n', 'utf8');
+        const before = fs.readFileSync(file), result = generateItems(file);
+        assert.deepEqual(result.scanned, []); assert.equal(result.skippedEmpty.length, 30);
+        assert.equal(result.total, items?.length ?? 0); assert.deepEqual(fs.readFileSync(file), before);
+        assert.deepEqual(fs.readFileSync(stateFile), progress);
+        assert.equal(fs.existsSync(path.join(folder, 'results', 'run.lock')), false);
+      }
+    });
+    check('素材誤放在更深層的非空資料夾仍回報錯誤，不當作空資料夾略過', folder => {
+      const file = configAt(folder), root = path.join(folder, 'sticker');
+      packAt(path.join(root, '001'), 'nested');
+      unchangedOnFailure(file, () => generateItems(file), /需要且只能有一個/);
+    });
     check('ZIP 改名時保留既有 ID、停用狀態、個別設定及續跑指紋', folder => {
       const previous = structuredClone(fixture.items[0]);
       previous.id = 'custom-id'; previous.enabled = false; previous.priceTier = '7';
@@ -150,10 +203,13 @@ function runScanTests() {
       fs.writeFileSync(pack.zipFile, zip(entries(8).map(([name, content]) => [name === '08.png' ? '09.png' : name, content])));
       unchangedOnFailure(file, () => generateItems(file), /缺少：08.png/);
     });
-    check('空掃描目錄與無效共用設定不覆寫清單', folder => {
+    check('空掃描根目錄正常結束，非空素材仍會驗證共用設定', folder => {
       const file = configAt(folder), root = path.join(folder, 'sticker');
       fs.mkdirSync(root);
-      unchangedOnFailure(file, () => generateItems(file), /沒有貼圖子資料夾/);
+      const before = fs.readFileSync(file), result = generateItems(file);
+      assert.deepEqual(result.scanned, []); assert.deepEqual(result.skippedEmpty, []); assert.equal(result.total, 0);
+      assert.deepEqual(fs.readFileSync(file), before);
+      assert.equal(fs.existsSync(path.join(folder, 'results', 'run.lock')), false);
       packAt(root, '001');
       const config = core.readJSON(file); config.defaults.priceTier = 'invalid'; core.writeJSON(file, config);
       unchangedOnFailure(file, () => generateItems(file), /priceTier/);
@@ -190,6 +246,21 @@ function runScanTests() {
       assert.equal(result.status, 1); assert.match(result.stderr, /分開使用/);
       result = run(['--scan', '--scan-dir', 'missing']);
       assert.equal(result.status, 1); assert.equal(fs.existsSync(path.join(folder, 'results', 'run.lock')), false);
+    });
+    check('CLI 顯示實際掃描組數與略過名單，全部空時正常結束並保留清單', folder => {
+      const file = configAt(folder), root = path.join(folder, 'sticker');
+      for (let index = 1; index <= 30; index++) fs.mkdirSync(path.join(root, String(index).padStart(3, '0')), { recursive: true });
+      const pack = packAt(root, '007');
+      const run = () => spawnSync(process.execPath, [path.join(__dirname, '..', 'run.cjs'), '--scan', '--items', file], { cwd: temp, encoding: 'utf8' });
+      let result = run();
+      assert.equal(result.status, 0, result.stderr); assert.match(result.stdout, /掃描 1 組/);
+      assert.match(result.stdout, /略過 29 個空資料夾：001、002/); assert.match(result.stdout, /030/);
+      assert.deepEqual(core.readJSON(file).items.map(item => item.id), ['007']);
+      fs.unlinkSync(pack.copyFile); fs.unlinkSync(pack.zipFile);
+      const before = fs.readFileSync(file); result = run();
+      assert.equal(result.status, 0, result.stderr); assert.match(result.stdout, /沒有可掃描的素材，原清單保留/);
+      assert.match(result.stdout, /略過 30 個空資料夾/); assert.deepEqual(fs.readFileSync(file), before);
+      assert.equal(fs.existsSync(path.join(folder, 'results', 'run.lock')), false);
     });
     return { passed: passed.length, tests: passed };
   } finally {

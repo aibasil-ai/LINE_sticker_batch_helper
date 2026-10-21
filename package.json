@@ -8,13 +8,15 @@
     "clear-items": "node run.cjs --clear-items",
     "clear-results": "node run.cjs --clear-results",
     "clear-sticker": "node run.cjs --clear-sticker",
+    "clear-all": "npm run clear-sticker && npm run clear-items && npm run clear-results",
     "check": "node run.cjs --check",
     "login": "node run.cjs --login",
     "start": "node run.cjs",
     "resume": "node run.cjs --resume",
-    "test": "node test/core.test.cjs && node test/cli.test.cjs && node test/scan.test.cjs && node test/sticker-cleanup.test.cjs",
+    "test": "node test/core.test.cjs && node test/cli.test.cjs && node test/scan.test.cjs && node test/sticker-cleanup.test.cjs && node test/clear-all.test.cjs",
     "test:scan": "node test/scan.test.cjs",
     "test:sticker-cleanup": "node test/sticker-cleanup.test.cjs",
+    "test:clear-all": "node test/clear-all.test.cjs",
     "test:announcements": "node test/announcements.test.cjs"
   },
   "devDependencies": { "@playwright/test": "latest" }

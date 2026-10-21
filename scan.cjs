@@ -97,7 +97,6 @@ function generateItems(configFile, directory) {
     const folders = fs.readdirSync(root, { withFileTypes: true })
       .filter(entry => entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== '__MACOSX')
       .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }) || a.name.localeCompare(b.name, 'en'));
-    if (!folders.length) throw new Error('掃描資料夾內沒有貼圖子資料夾：' + root);
     const items = [...(config.items || [])];
     const ids = new Set();
     for (const item of items) {
@@ -105,10 +104,12 @@ function generateItems(configFile, directory) {
       if (ids.has(item.id)) throw new Error('重複 id：' + item.id);
       ids.add(item.id);
     }
-    const scanned = [];
+    const scanned = [], skippedEmpty = [];
     for (const folder of folders) {
       const folderPath = path.join(root, folder.name);
-      const files = fs.readdirSync(folderPath, { withFileTypes: true }).filter(entry => entry.isFile() && !entry.name.startsWith('.'));
+      const entries = fs.readdirSync(folderPath, { withFileTypes: true }).filter(entry => !entry.name.startsWith('.'));
+      if (!entries.length) { skippedEmpty.push(folder.name); continue; }
+      const files = entries.filter(entry => entry.isFile());
       const findOne = extension => {
         const matches = files.filter(entry => path.extname(entry.name).toLowerCase() === extension);
         if (matches.length !== 1) throw new Error(folderPath + '：需要且只能有一個 ' + extension + ' 檔案，目前找到 ' + matches.length + ' 個');
@@ -134,11 +135,13 @@ function generateItems(configFile, directory) {
       else { items.push(item); ids.add(id); }
       scanned.push({ id, zip: item.zip, copyPath, stickerCount: item.stickerCount, existing: !!previous });
     }
+    const result = { configFile, scanDir: root, scanned, skippedEmpty, total: items.length };
+    if (!scanned.length) return result;
     const generated = { ...config, items };
     // Validate disabled items too, without changing their stored enabled flags.
     validateConfig({ ...generated, items: items.map(item => ({ ...item, enabled: true })) }, configFile);
     writeJSON(configFile, generated);
-    return { configFile, scanDir: root, scanned, total: items.length };
+    return result;
   } finally {
     fs.unlinkSync(lockFile);
   }
