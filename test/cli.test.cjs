@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { createRequire } = require('node:module');
+const { spawnSync } = require('node:child_process');
 const core = require('../core.cjs');
 const { png, zip } = require('./core.test.cjs');
 
@@ -54,6 +55,62 @@ async function runCLITests() {
     const bad = structuredClone(config); const second = structuredClone(bad.items[0]); second.id = 'second'; second.zip = 'missing.zip'; bad.items.push(second);
     core.writeJSON(configFile, bad); result = await execute(['--resume']);
     assert.equal(result.code, 1); assert.equal(result.browserCalls, 0); assert.match(result.messages, /ENOENT/); passed.push('整批預檢失敗時不開始任何網站操作');
+    const clearConfig = { ...structuredClone(config), scanDir: 'custom source', customSetting: { keep: true },
+      items: [...config.items, { id: 'disabled', enabled: false }, { id: 'incomplete' }] };
+    core.writeJSON(configFile, clearConfig);
+    const authFile = path.join(folder, 'line-auth.json'), summaryFile = path.join(folder, 'results', 'summary.json');
+    core.writeJSON(authFile, { test: '登入狀態' }); core.writeJSON(summaryFile, [{ id: 'ibusuki-002', stage: 'draft_ready' }]);
+    const preserved = [stateFile, summaryFile, authFile, archive].map(file => [file, fs.readFileSync(file)]);
+    result = await execute(['--clear-items']);
+    assert.equal(result.code, 0, result.messages); assert.equal(result.browserCalls, 0);
+    assert.match(result.messages, /已清除 3 組/);
+    assert.deepEqual(core.readJSON(configFile), { ...clearConfig, items: [] });
+    for (const [file, before] of preserved) assert.deepEqual(fs.readFileSync(file), before);
+    assert.equal(fs.existsSync(lockFile), false); passed.push('清空所有組別並保留共用設定、進度、登入與素材，不啟動瀏覽器');
+    const emptyBefore = fs.readFileSync(configFile);
+    result = await execute(['--clear-items']);
+    assert.equal(result.code, 0, result.messages); assert.match(result.messages, /已清除 0 組/);
+    assert.deepEqual(fs.readFileSync(configFile), emptyBefore); passed.push('空清單可重複清除');
+    const withoutItems = { ...clearConfig }; delete withoutItems.items;
+    core.writeJSON(configFile, withoutItems); result = await execute(['--clear-items']);
+    assert.equal(result.code, 0, result.messages);
+    assert.deepEqual(core.readJSON(configFile), { ...withoutItems, items: [] }); passed.push('省略 items 時建立空陣列並保留設定');
+    for (const invalid of [{ ...config, items: {} }, { ...config, items: null }, null, [], 'invalid', 42]) {
+      core.writeJSON(configFile, invalid); const before = fs.readFileSync(configFile);
+      result = await execute(['--clear-items']);
+      assert.equal(result.code, 1); assert.equal(result.browserCalls, 0);
+      assert.match(result.messages, /items 必須是陣列|清單最外層必須是物件/);
+      assert.deepEqual(fs.readFileSync(configFile), before); assert.equal(fs.existsSync(lockFile), false);
+    }
+    passed.push('無效清單結構不會被清除指令覆寫，且會釋放鎖');
+    fs.writeFileSync(configFile, '{ invalid JSON');
+    result = await execute(['--clear-items']);
+    assert.equal(result.code, 1); assert.equal(fs.readFileSync(configFile, 'utf8'), '{ invalid JSON');
+    assert.equal(fs.existsSync(lockFile), false); passed.push('JSON 解析失敗時保留原檔並釋放鎖');
+    core.writeJSON(configFile, clearConfig);
+    const beforeClear = fs.readFileSync(configFile);
+    fs.writeFileSync(lockFile, 'another process'); result = await execute(['--clear-items']);
+    assert.equal(result.code, 1); assert.match(result.messages, /run.lock/);
+    assert.deepEqual(fs.readFileSync(configFile), beforeClear); assert.equal(fs.readFileSync(lockFile, 'utf8'), 'another process');
+    fs.unlinkSync(lockFile); passed.push('清除遇到執行鎖時保留清單與其他程序的鎖');
+    for (const args of [['--scan'], ['--check'], ['--login'], ['--resume'], ['--auto'], ['--id', 'ibusuki-002'],
+      ['--zip', 'override.zip'], ['--attach-url', 'https://creator.line.me/my/123/sticker/4567890'], ['--scan-dir', 'sticker']]) {
+      result = await execute(['--clear-items', ...args]);
+      assert.equal(result.code, 1); assert.equal(result.browserCalls, 0); assert.match(result.messages, /--clear-items.*分開使用/);
+      assert.deepEqual(fs.readFileSync(configFile), beforeClear); assert.equal(fs.existsSync(lockFile), false);
+    }
+    passed.push('清除指令拒絕與其他操作參數混用');
+    const otherFile = path.join(folder, 'other settings', 'custom items.json');
+    core.writeJSON(otherFile, clearConfig);
+    const child = spawnSync(process.execPath, [scriptPath, '--clear-items', '--items', path.relative(folder, otherFile)], { cwd: folder, encoding: 'utf8' });
+    assert.equal(child.status, 0, child.stderr); assert.match(child.stdout, /已清除 3 組/);
+    assert.deepEqual(core.readJSON(otherFile), { ...clearConfig, items: [] });
+    assert.deepEqual(fs.readFileSync(configFile), beforeClear);
+    assert.equal(fs.existsSync(path.join(path.dirname(otherFile), 'results', 'run.lock')), false);
+    passed.push('可從其他工作目錄清除指定的相對路徑清單，支援空白路徑');
+    result = await execute(['--clear-items', '--help']);
+    assert.equal(result.code, 0, result.messages); assert.match(result.messages, /--clear-items/);
+    assert.deepEqual(fs.readFileSync(configFile), beforeClear); passed.push('說明列出清除指令，查看說明不改寫清單');
     return { passed: passed.length, tests: passed };
   } finally {
     assert.ok(path.resolve(folder).startsWith(path.resolve(os.tmpdir()) + path.sep + 'line-sticker-cli-'));

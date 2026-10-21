@@ -5,6 +5,7 @@
   "description": "LINE Creators Market batch helper based on the supplied recording",
   "scripts": {
     "scan": "node run.cjs --scan",
+    "clear-items": "node run.cjs --clear-items",
     "check": "node run.cjs --check",
     "login": "node run.cjs --login",
     "start": "node run.cjs",
