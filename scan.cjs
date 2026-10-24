@@ -53,7 +53,7 @@ function parseListingCopy(text, source = '文案檔') {
     if (ANNOTATION_PATTERN.test(trimmed)) { inNotes = true; field = null; continue; }
     // A listing may include a document title or counting rules before the first language.
     if (!language || inNotes) continue;
-    if (/^(?:名稱|貼圖名稱|標題|說明|商品說明)計數\s*[:：]/.test(trimmed)) { field = null; continue; }
+    if (/^(?:名稱|貼圖名稱|標題|說明|商品說明)計[數算]\s*[:：]/.test(trimmed)) { field = null; continue; }
     const title = trimmed.match(TITLE_PATTERN);
     const description = trimmed.match(/^(?:說明|商品說明|Description)(?:\s*\/\s*Description)?\s*[:：]\s*(.*)$/i);
     if (title || description) {

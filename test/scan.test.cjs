@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const core = require('../core.cjs');
-const { parseListingCopy, generateItems } = require('../scan.cjs');
+const { parseListingCopy, parseTraditionalTitle, generateItems } = require('../scan.cjs');
 const { png, zip } = require('./core.test.cjs');
 const fixture = core.readJSON(path.join(__dirname, 'fixtures', 'items.json'));
 const languages = fixture.items[0].languages;
@@ -55,6 +55,44 @@ function runScanTests() {
     check('解析兩種既有文案格式、BOM 與 CRLF，忽略計數行', () => {
       assert.deepEqual(parseListingCopy(listing()), languages);
       assert.deepEqual(parseListingCopy('\uFEFF' + listing(languages, true).replace(/\n/g, '\r\n')), languages);
+    });
+    check('各種名稱與說明欄位皆支援計數及計算，忽略全形斜線與單位文字', () => {
+      for (const counting of ['計數', '計算']) {
+        for (const title of ['名稱', '貼圖名稱', '標題']) {
+          for (const description of ['說明', '商品說明']) {
+            const text = listing(languages, true)
+              .replace(/名稱計數：0 \/ 40/g, title + counting + '：9／18')
+              .replace(/說明計數：0 \/ 160/g, description + counting + ': 61字元／120計數單位');
+            assert.deepEqual(parseListingCopy(text), languages);
+          }
+        }
+      }
+    });
+    check('第 006 組實際計算格式可產生三語清單，保留 TXT 且不混入計算資訊', folder => {
+      const text = fs.readFileSync(path.join(__dirname, 'fixtures', 'tateyama-listing-copy.txt'), 'utf8');
+      const expected = {
+        'zh-Hant': {
+          title: '立山雲海纜車與雷鳥',
+          description: '紅色立山空中纜車，和繫著圍巾的原創雷鳥小夥伴一起穿梭雪山雲海。32款無字貼圖，傳達問候、感謝、開心與加油，陪伴每天的聊天。'
+        },
+        en: {
+          title: 'Tateyama Ropeway & Ptarmigan',
+          description: 'A red Tateyama ropeway cabin and a little ptarmigan in a teal scarf share 32 text-free stickers for greetings, thanks, happy moments and cheering friends on.'
+        },
+        ja: {
+          title: '立山ロープウェイとライチョウ',
+          description: '赤い立山ロープウェイと、青緑のマフラーを巻いたオリジナルのライチョウ。雪山と雲海を舞台に、あいさつや感謝、応援の気持ちを伝える文字なしスタンプ全32種。'
+        }
+      };
+      assert.deepEqual(parseListingCopy(text), expected);
+      assert.equal(parseTraditionalTitle(text), expected['zh-Hant'].title);
+      assert.throws(() => parseListingCopy(text.replace('貼圖名稱：立山雲海纜車與雷鳥', '')), /缺少 zh-Hant/);
+      const file = configAt(folder), root = path.join(folder, 'sticker');
+      const pack = packAt(root, '006', 32, '\uFEFF' + text.replace(/\n/g, '\r\n'));
+      const before = fs.readFileSync(pack.copyFile), result = generateItems(file);
+      assert.equal(result.scanned.length, 1);
+      assert.deepEqual(core.readJSON(file).items[0].languages, expected);
+      assert.deepEqual(fs.readFileSync(pack.copyFile), before);
     });
     check('保留多行說明與段落', () => {
       const copy = structuredClone(languages); copy.en.description = 'First line.\n\nSecond line.';

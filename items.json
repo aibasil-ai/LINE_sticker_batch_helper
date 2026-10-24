@@ -15,42 +15,202 @@
   },
   "items": [
     {
-      "id": "002",
+      "id": "001",
       "enabled": true,
-      "zip": "sticker/002/ibusuki-upload.zip",
+      "zip": "sticker/001/yokohama-upload.zip",
       "stickerCount": 32,
       "languages": {
         "zh-Hant": {
-          "title": "指宿海岸小列車與小海龜",
-          "description": "黑白小列車和小海龜，陪你打招呼、道謝、加油與放鬆。32張無字貼圖，分享海岸旅行般的溫暖日常。"
+          "title": "橫濱港灣纜車與水手海鷗",
+          "description": "城市纜車與戴水手領巾的小海鷗，用港灣燈光陪你問候、道謝、加油與傳遞心情。32張無字貼圖，讓日常聊天更溫暖。"
         },
         "en": {
-          "title": "Coastal Train and Tiny Turtle",
-          "description": "A little black-and-white train and a tiny turtle share greetings, thanks, cheers and cozy breaks in 32 wordless stickers inspired by Ibusuki coastal trips."
+          "title": "Harbor Gondola & Sailor Gull",
+          "description": "A city gondola and a little gull in a sailor scarf share greetings, thanks, cheers and everyday moods in 32 wordless stickers inspired by Yokohama harbor."
         },
         "ja": {
-          "title": "海辺の小さな列車とこがめ",
-          "description": "指宿の海辺の旅をイメージした、小さな白黒列車とこがめ。あいさつ、お礼、応援、ひと休みに使える文字なしスタンプ32個です。"
+          "title": "横浜の港ゴンドラと水兵カモメ",
+          "description": "横浜の港をイメージしたゴンドラと、水兵スカーフの小さなカモメ。あいさつ、お礼、応援など、毎日に使える文字なしスタンプ32個です。"
+        }
+      }
+    },
+    {
+      "id": "002",
+      "enabled": true,
+      "zip": "sticker/002/kusatsu-tengu-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "草津山景纜車與湯花精靈",
+          "description": "銀灰纜車與圍著浴巾的湯花精靈，陪你打招呼、說謝謝、加油與休息。用無字表情分享草津山景和溫泉般的暖意。"
+        },
+        "en": {
+          "title": "Kusatsu Gondola and Hot Spring Sprite",
+          "description": "A gondola and a towel-clad hot spring sprite share greetings, thanks, cheers and cozy breaks. Wordless smiles inspired by Kusatsu mountains."
+        },
+        "ja": {
+          "title": "草津のゴンドラと湯の花の精",
+          "description": "銀色のゴンドラとタオル姿の湯の花の精が、あいさつや感謝、応援、ひと休みをお届け。草津の山と温泉をイメージした、文字なしスタンプです。"
         }
       }
     },
     {
       "id": "003",
       "enabled": true,
-      "zip": "sticker/003/starrail-upload.zip",
+      "zip": "sticker/003/nozawa-upload.zip",
       "stickerCount": 32,
       "languages": {
         "zh-Hant": {
-          "title": "星旅小火車與柚子嚮導",
-          "description": "九州旅遊靈感的酒紅小火車，和柚子嚮導一起問候、道謝、撒嬌與加油。32張無字貼圖，陪你分享每一天的心情。"
+          "title": "野澤溫泉纜車與滑雪小兔",
+          "description": "長坂吊廂纜車化身可愛主角，與戴護目鏡的滑雪小兔一起打招呼、道謝、加油和休息。32張無文字貼圖，陪你分享每天的心情。"
         },
         "en": {
-          "title": "Starry Rail and Yuzu",
-          "description": "A burgundy train and its yuzu guide share greetings, thanks, hugs and encouragement in 32 wordless stickers inspired by travels around Kyushu."
+          "title": "Nozawa Gondola & Ski Bunny",
+          "description": "A cheerful Nagasaka-inspired gondola and its ski bunny share greetings, thanks, cheers and cozy breaks in 32 wordless stickers."
         },
         "ja": {
-          "title": "星旅列車とゆずガイド",
-          "description": "九州の旅をイメージした赤い列車とゆずガイド。あいさつ、感謝、応援など、毎日の気持ちを伝える文字なしスタンプ32個。"
+          "title": "野沢温泉ゴンドラとスキーうさぎ",
+          "description": "長坂ゴンドラをモチーフにした車両と、ゴーグル姿の小さなうさぎ。あいさつ、お礼、応援、ひと休みなど、毎日の気持ちを伝える文字なしスタンプ32個。"
+        }
+      }
+    },
+    {
+      "id": "004",
+      "enabled": true,
+      "zip": "sticker/004/komagatake-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "駒岳纜車與背包雲朵",
+          "description": "紅白纜車與背著小背包的山岳雲朵，帶來駒岳高山旅途的日常心情。用無字表情傳達問候、感謝、加油與關心。"
+        },
+        "en": {
+          "title": "Komagatake Cable Car & Cloud",
+          "description": "A cheerful cable car and its backpack cloud buddy bring Komagatake mountain moods to daily chats. Say hello, thanks and more with 32 wordless stickers."
+        },
+        "ja": {
+          "title": "駒ヶ岳ロープウェイと雲の相棒",
+          "description": "駒ヶ岳の山旅をイメージしたロープウェイと、小さなリュックを背負った雲の相棒。あいさつや感謝、応援の気持ちを伝える文字なしスタンプです。"
+        }
+      }
+    },
+    {
+      "id": "005",
+      "enabled": true,
+      "zip": "sticker/005/shigakogen-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "三連纜車與橡果小精靈",
+          "description": "三連吊廂與三顆橡果小精靈，陪你打招呼、道謝、加油和撒嬌。以志賀高原為靈感，32張無文字貼圖，傳遞高原森林的暖心日常。"
+        },
+        "en": {
+          "title": "Gondola Trio & Acorn Friends",
+          "description": "Three gondola cabins and three acorn friends share greetings, thanks, cheers and cozy moments. 32 wordless stickers inspired by Shiga Kogen."
+        },
+        "ja": {
+          "title": "三連ゴンドラとどんぐりの仲間",
+          "description": "志賀高原をイメージした三連ゴンドラと、表情豊かなどんぐりの仲間たち。あいさつ、お礼、応援やいたわりに使える、文字なし32種類のスタンプです。"
+        }
+      }
+    },
+    {
+      "id": "006",
+      "enabled": true,
+      "zip": "sticker/006/tateyama-upload(1).zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "立山雲海纜車與雷鳥",
+          "description": "紅色立山空中纜車，和繫著圍巾的原創雷鳥小夥伴一起穿梭雪山雲海。32款無字貼圖，傳達問候、感謝、開心與加油，陪伴每天的聊天。"
+        },
+        "en": {
+          "title": "Tateyama Ropeway & Ptarmigan",
+          "description": "A red Tateyama ropeway cabin and a little ptarmigan in a teal scarf share 32 text-free stickers for greetings, thanks, happy moments and cheering friends on."
+        },
+        "ja": {
+          "title": "立山ロープウェイとライチョウ",
+          "description": "赤い立山ロープウェイと、青緑のマフラーを巻いたオリジナルのライチョウ。雪山と雲海を舞台に、あいさつや感謝、応援の気持ちを伝える文字なしスタンプ全32種。"
+        }
+      }
+    },
+    {
+      "id": "007",
+      "enabled": true,
+      "zip": "sticker/007/sunrise-express-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "雪國纜車與暖帽小麻雀",
+          "description": "暖橘吊廂、薄荷吊椅與戴暖帽的小麻雀，陪你問候、道謝、加油和放鬆。32張無字貼圖，讓雪國日常為聊天添一點溫暖。"
+        },
+        "en": {
+          "title": "Snowy Lifts and Cozy Sparrow",
+          "description": "A gondola, a chairlift and a sparrow in a knit hat share 32 wordless stickers for greetings, thanks, cheers and cozy everyday chats."
+        },
+        "ja": {
+          "title": "雪国リフトとニット帽すずめ",
+          "description": "ゴンドラとチェアリフト、ニット帽の小さなすずめが気持ちを届けます。あいさつやお礼、応援、ひと休みに使える、文字なしの32個です。"
+        }
+      }
+    },
+    {
+      "id": "008",
+      "enabled": true,
+      "zip": "sticker/008/shinhotaka-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "奧飛驒雙層纜車與岩石精靈",
+          "description": "靈感來自奧飛驒山岳與雙層纜車。奶油色小纜車和戴毛帽的岩石精靈，用32款無字表情陪你問候、感謝、打氣與休息。"
+        },
+        "en": {
+          "title": "Okuhida Double-Decker Cable Car",
+          "description": "A cheerful double-decker cable car and a tiny rock pal in a knit hat share 32 wordless stickers for greetings, thanks, encouragement and everyday moods."
+        },
+        "ja": {
+          "title": "奥飛騨の二階建てゴンドラと岩の妖精",
+          "description": "奥飛騨の山々と二階建てゴンドラがモチーフ。ニット帽の小さな岩の妖精と、あいさつや感謝、応援に使える文字なしスタンプ32個。"
+        }
+      }
+    },
+    {
+      "id": "009",
+      "enabled": true,
+      "zip": "sticker/009/yuzawa-kogen-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "湯澤高原纜車與圍巾小熊",
+          "description": "以湯澤高原為靈感的原創纜車與圍巾小熊，帶著高原花草與雪景，用32張無字貼圖傳遞問候、感謝、加油和關心。"
+        },
+        "en": {
+          "title": "Yuzawa Sky Tram & Scarf Bear",
+          "description": "An original tram and scarf-wearing bear inspired by Yuzawa Kogen. Enjoy 32 wordless stickers for greetings, thanks, comfort and everyday cheer."
+        },
+        "ja": {
+          "title": "湯沢高原ロープウェイとマフラーくま",
+          "description": "湯沢高原をイメージしたオリジナルのロープウェイとマフラーくま。高原の花や雪景色とともに、あいさつや感謝、応援を伝える文字なしの32枚です。"
+        }
+      }
+    },
+    {
+      "id": "010",
+      "enabled": true,
+      "zip": "sticker/010/fuji-ropeway-upload.zip",
+      "stickerCount": 32,
+      "languages": {
+        "zh-Hant": {
+          "title": "富士湖畔纜車與雲朵精靈",
+          "description": "木色纜車和戴雪頂帽的雲朵精靈，陪你度過湖畔日常。用無字表情傳達問候、感謝、加油與各種心情。"
+        },
+        "en": {
+          "title": "Fuji Cable Car & Cloud Buddy",
+          "description": "A wooden cable car and a cloud in a snowy Fuji hat share lakeside days. Send wordless greetings, thanks, cheers and everyday feelings."
+        },
+        "ja": {
+          "title": "富士の湖畔ロープウェイと雲の子",
+          "description": "木の色のロープウェイと、雪の富士山帽子をかぶった雲の子。湖畔の毎日から、あいさつや感謝、応援、いろんな気持ちを文字なしで届けます。"
         }
       }
     }
